@@ -13,6 +13,7 @@ const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 var _shoot_timer: Timer
 
 func _ready() -> void:
+	add_to_group("player_team")
 	_shoot_timer = Timer.new()
 	_shoot_timer.wait_time = _get_shoot_interval()
 	_shoot_timer.one_shot = false
@@ -63,6 +64,7 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
 		return
 	bullet.set("color", bullet_color)
 	bullet.set("damage", damage)
+	bullet.set("is_enemy_bullet", false)
 	bullet.global_position = global_position
 	bullet.rotation = deg_to_rad(angle_deg)
 	bullet.scale = Vector2.ONE * scale_factor

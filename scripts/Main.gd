@@ -4,6 +4,7 @@ const EnemyScene: PackedScene = preload("res://scenes/entities/Enemy.tscn")
 const PlayerScene: PackedScene = preload("res://scenes/entities/Player.tscn")
 const ShopUIScene: PackedScene = preload("res://scenes/ui/ShopUI.tscn")
 const ExplosionScene: PackedScene = preload("res://scenes/effects/Explosion.tscn")
+const EnemyScript: Script = preload("res://scripts/entities/Enemy.gd")
 
 @export var spawn_interval: float = 1.0
 @export var spawn_padding: float = 20.0
@@ -71,6 +72,7 @@ func _on_spawn_timeout() -> void:
         enemy.connect("enemy_died", _on_enemy_killed)
     enemy.set("max_hp", 30 + (current_wave * 10))
     enemy.set("speed", 100 + (current_wave * 5))
+    enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
         viewport_rect.position.x + viewport_rect.size.x - spawn_padding)
@@ -125,3 +127,15 @@ func _update_ui() -> void:
         _wave_label.text = "Wave: %d" % current_wave
     if _gold_label != null:
         _gold_label.text = "Gold: %d" % gold
+
+func _pick_enemy_type() -> int:
+    if current_wave <= 1:
+        return EnemyScript.EnemyType.BASIC
+    if current_wave == 2:
+        return EnemyScript.EnemyType.BASIC if randi_range(0, 1) == 0 else EnemyScript.EnemyType.DASHER
+    var roll := randi_range(0, 2)
+    if roll == 0:
+        return EnemyScript.EnemyType.BASIC
+    if roll == 1:
+        return EnemyScript.EnemyType.DASHER
+    return EnemyScript.EnemyType.SHOOTER

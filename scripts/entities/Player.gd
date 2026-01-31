@@ -10,6 +10,7 @@ var _shoot_timer: Timer
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 
 func _ready() -> void:
+	add_to_group("player_team")
 	_shoot_timer = Timer.new()
 	_shoot_timer.wait_time = shoot_interval
 	_shoot_timer.one_shot = false
@@ -42,6 +43,7 @@ func _on_shoot_timeout() -> void:
 		return
 	bullet.set("color", Color.GREEN)
 	bullet.set("damage", 10)
+	bullet.set("is_enemy_bullet", false)
 	bullet.global_position = global_position
 	get_tree().current_scene.add_child(bullet)
 
