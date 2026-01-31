@@ -46,6 +46,9 @@ func _draw() -> void:
     draw_polyline(points, Color.GREEN, 2.0)
 
 func die() -> void:
+    call_deferred("_deferred_die")
+
+func _deferred_die() -> void:
     print("Game Over")
     get_tree().reload_current_scene()
 

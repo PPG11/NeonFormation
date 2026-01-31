@@ -99,7 +99,7 @@ func start_wave() -> void:
     _spawn_timer.start()
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
-    gold += balance.gold_per_kill
+    gold += reward_gold
     enemies_alive = max(enemies_alive - 1, 0)
     _update_ui()
     apply_shake(5.0)
