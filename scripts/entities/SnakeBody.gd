@@ -33,10 +33,11 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
-	var target_pos := target.global_transform * follow_offset
-	var dist := global_position.distance_to(target_pos)
+	var to_target := target.global_position - global_position
+	var dist := to_target.length()
 	if dist > keep_distance:
-		global_position = global_position.move_toward(target_pos, speed * delta)
+		var desired_pos := target.global_position - to_target.normalized() * keep_distance
+		global_position = global_position.move_toward(desired_pos, speed * delta)
 	queue_redraw()
 
 func _draw() -> void:
