@@ -1,7 +1,10 @@
 extends CharacterBody2D
 
 @export var bullet_scene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
+@export var body_scene: PackedScene = preload("res://scenes/entities/SnakeBody.tscn")
 @export var shoot_interval: float = 0.2
+
+var body_parts: Array[Node2D] = []
 
 var _shoot_timer: Timer
 
@@ -12,6 +15,8 @@ func _ready() -> void:
 	_shoot_timer.autostart = true
 	add_child(_shoot_timer)
 	_shoot_timer.timeout.connect(_on_shoot_timeout)
+
+	call_deferred("_spawn_initial_bodies")
 
 func _physics_process(_delta: float) -> void:
 	var target := get_global_mouse_position()
@@ -32,3 +37,23 @@ func _on_shoot_timeout() -> void:
 		return
 	bullet.global_position = global_position
 	get_tree().current_scene.add_child(bullet)
+
+func add_body() -> void:
+	if body_scene == null:
+		return
+	var body := body_scene.instantiate() as Node2D
+	if body == null:
+		return
+	var target: Node2D = self if body_parts.is_empty() else body_parts.back()
+	body.set("target", target)
+	get_tree().current_scene.add_child(body)
+	var offset := body.get("follow_offset") as Vector2
+	if offset == null:
+		offset = Vector2.ZERO
+	body.global_position = target.global_transform * offset
+	body_parts.append(body)
+
+func _spawn_initial_bodies() -> void:
+	add_body()
+	add_body()
+	add_body()
