@@ -11,6 +11,9 @@ enum ClassType { STRIKER, HEAVY, SPREAD }
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 
 var _shoot_timer: Timer
+var _attack_speed: float = 1.0
+var _damage_mult: float = 1.0
+var _size_mult: float = 1.0
 
 func _ready() -> void:
 	add_to_group("player_team")
@@ -21,6 +24,11 @@ func _ready() -> void:
 	_shoot_timer.autostart = true
 	add_child(_shoot_timer)
 	_shoot_timer.timeout.connect(_on_shoot_timer_timeout)
+	update_stats({
+		"attack_speed": 1.0,
+		"damage_mult": 1.0,
+		"size_mult": 1.0
+	})
 
 func _physics_process(delta: float) -> void:
 	if target == null:
@@ -64,11 +72,11 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
 	if bullet == null:
 		return
 	bullet.set("color", bullet_color)
-	bullet.set("damage", damage)
+	bullet.set("damage", int(damage * _damage_mult))
 	bullet.set("is_enemy_bullet", false)
 	bullet.global_position = global_position
 	bullet.rotation = deg_to_rad(angle_deg)
-	bullet.scale = Vector2.ONE * scale_factor
+	bullet.scale = Vector2.ONE * scale_factor * _size_mult
 	get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:
@@ -84,9 +92,16 @@ func _get_shoot_interval() -> float:
 func _set_unit_type(value: ClassType) -> void:
 	unit_type = value
 	if _shoot_timer != null:
-		_shoot_timer.wait_time = _get_shoot_interval()
+		_shoot_timer.wait_time = _get_shoot_interval() / _attack_speed
 	queue_redraw()
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.is_in_group("enemy_team"):
 		queue_free()
+
+func update_stats(bonuses: Dictionary) -> void:
+	_attack_speed = float(bonuses.get("attack_speed", 1.0))
+	_damage_mult = float(bonuses.get("damage_mult", 1.0))
+	_size_mult = float(bonuses.get("size_mult", 1.0))
+	if _shoot_timer != null:
+		_shoot_timer.wait_time = _get_shoot_interval() / _attack_speed

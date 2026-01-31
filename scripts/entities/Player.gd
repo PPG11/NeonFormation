@@ -4,13 +4,24 @@ extends CharacterBody2D
 @export var body_scene: PackedScene = preload("res://scenes/entities/SnakeBody.tscn")
 @export var shoot_interval: float = 0.2
 
+@export var max_hp: int = 5
+var current_hp: int = 5
+var is_invincible: bool = false
+
 var body_parts: Array[Node2D] = []
+var class_counts: Dictionary = {}
+var synergy_bonuses: Dictionary = {
+	"attack_speed": 1.0,
+	"damage_mult": 1.0,
+	"size_mult": 1.0
+}
 
 var _shoot_timer: Timer
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 
 func _ready() -> void:
 	add_to_group("player_team")
+	current_hp = max_hp
 	_shoot_timer = Timer.new()
 	_shoot_timer.wait_time = shoot_interval
 	_shoot_timer.one_shot = false
@@ -34,6 +45,25 @@ func _draw() -> void:
 func die() -> void:
 	print("Game Over")
 	get_tree().reload_current_scene()
+
+func take_damage(amount: int) -> void:
+	if is_invincible:
+		return
+	current_hp -= amount
+	if current_hp <= 0:
+		die()
+		return
+	is_invincible = true
+	var tween := create_tween()
+	tween.set_loops(5)
+	tween.tween_property(self, "modulate:a", 0.5, 0.1)
+	tween.tween_property(self, "modulate:a", 1.0, 0.1)
+	var main := get_tree().current_scene
+	if main != null and main.has_method("apply_shake"):
+		main.call("apply_shake", 10.0)
+	await get_tree().create_timer(1.0).timeout
+	is_invincible = false
+	modulate.a = 1.0
 
 func _on_shoot_timeout() -> void:
 	if bullet_scene == null:
@@ -63,10 +93,12 @@ func add_body(unit_type: int) -> void:
 		offset = Vector2.ZERO
 	body.global_position = target.global_transform * offset
 	body_parts.append(body)
+	recalculate_synergies()
 
 func _on_body_exited(body: Node) -> void:
 	body_parts.erase(body)
 	_refresh_body_targets()
+	recalculate_synergies()
 
 func _refresh_body_targets() -> void:
 	for i in body_parts.size():
@@ -75,6 +107,43 @@ func _refresh_body_targets() -> void:
 			continue
 		var target: Node2D = self if i == 0 else body_parts[i - 1]
 		part.set("target", target)
+
+func recalculate_synergies() -> void:
+	class_counts = {
+		"striker": 0,
+		"heavy": 0,
+		"spread": 0
+	}
+	for part in body_parts:
+		if part == null:
+			continue
+		var t: int = int(part.get("unit_type"))
+		if t == SnakeBodyScript.ClassType.STRIKER:
+			class_counts["striker"] += 1
+		elif t == SnakeBodyScript.ClassType.HEAVY:
+			class_counts["heavy"] += 1
+		elif t == SnakeBodyScript.ClassType.SPREAD:
+			class_counts["spread"] += 1
+
+	synergy_bonuses["attack_speed"] = 1.0
+	synergy_bonuses["damage_mult"] = 1.0
+	synergy_bonuses["size_mult"] = 1.0
+
+	if class_counts["striker"] >= 4:
+		synergy_bonuses["attack_speed"] = 2.0
+	elif class_counts["striker"] >= 2:
+		synergy_bonuses["attack_speed"] = 1.5
+
+	if class_counts["heavy"] >= 2:
+		synergy_bonuses["damage_mult"] = 1.5
+
+	if class_counts["spread"] >= 2:
+		synergy_bonuses["size_mult"] = 1.5
+
+	print("Active Synergies: ", synergy_bonuses)
+	for part in body_parts:
+		if part != null and part.has_method("update_stats"):
+			part.call("update_stats", synergy_bonuses)
 
 func _spawn_initial_bodies() -> void:
 	add_body(SnakeBodyScript.ClassType.STRIKER)

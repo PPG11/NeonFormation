@@ -20,6 +20,7 @@ var _shop_ui: CanvasLayer
 @onready var _camera: Camera2D = $Camera2D
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
+@onready var _hp_bar: ProgressBar = $CanvasLayer/HPBar
 
 var shake_strength: float = 0.0
 var shake_decay: float = 5.0
@@ -58,6 +59,7 @@ func _process(delta: float) -> void:
         if shake_strength < 0.05:
             shake_strength = 0.0
             _camera.offset = Vector2.ZERO
+    _update_hp_bar()
 
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
@@ -127,6 +129,16 @@ func _update_ui() -> void:
         _wave_label.text = "Wave: %d" % current_wave
     if _gold_label != null:
         _gold_label.text = "Gold: %d" % gold
+
+func _update_hp_bar() -> void:
+    if _hp_bar == null or _player == null:
+        return
+    var max_hp = _player.get("max_hp")
+    var current_hp = _player.get("current_hp")
+    if typeof(max_hp) == TYPE_INT or typeof(max_hp) == TYPE_FLOAT:
+        _hp_bar.max_value = float(max_hp)
+    if typeof(current_hp) == TYPE_INT or typeof(current_hp) == TYPE_FLOAT:
+        _hp_bar.value = float(current_hp)
 
 func _pick_enemy_type() -> int:
     if current_wave <= 1:
