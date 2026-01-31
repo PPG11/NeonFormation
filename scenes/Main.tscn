@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 4
+glow_enabled = true
+glow_intensity = 1.0
+glow_strength = 1.1
+glow_blend_mode = 1
+
+[node name="Main" type="Node"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
