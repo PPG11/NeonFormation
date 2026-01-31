@@ -5,9 +5,11 @@ extends Area2D
 
 var current_hp: int
 var _base_modulate: Color
+const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 
 func _ready() -> void:
 	add_to_group("enemy")
+	monitoring = true
 	current_hp = max_hp
 	_base_modulate = modulate
 	var notifier := get_node_or_null("VisibleOnScreenNotifier2D") as VisibleOnScreenNotifier2D
@@ -15,6 +17,8 @@ func _ready() -> void:
 		notifier = VisibleOnScreenNotifier2D.new()
 		add_child(notifier)
 	notifier.screen_exited.connect(_on_screen_exited)
+	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
 
 func _process(delta: float) -> void:
 	global_position += Vector2.DOWN * speed * delta
@@ -26,6 +30,16 @@ func _draw() -> void:
 
 func _on_screen_exited() -> void:
 	queue_free()
+
+func _on_body_entered(body: Node) -> void:
+	if body is CharacterBody2D and body.has_method("die"):
+		body.call("die")
+		queue_free()
+
+func _on_area_entered(area: Area2D) -> void:
+	if area != null and area.get_script() == SnakeBodyScript:
+		area.queue_free()
+		queue_free()
 
 func take_damage(amount: int) -> void:
 	current_hp -= amount

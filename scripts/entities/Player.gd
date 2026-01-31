@@ -30,6 +30,10 @@ func _draw() -> void:
 	var points: PackedVector2Array = [p1, p2, p3, p1]
 	draw_polyline(points, Color.GREEN, 2.0)
 
+func die() -> void:
+	print("Game Over")
+	get_tree().reload_current_scene()
+
 func _on_shoot_timeout() -> void:
 	if bullet_scene == null:
 		return
