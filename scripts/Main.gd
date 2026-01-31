@@ -21,11 +21,17 @@ var _shop_ui: CanvasLayer
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
 @onready var _hp_bar: ProgressBar = $CanvasLayer/HPBar
+@onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
 var shake_strength: float = 0.0
 var shake_decay: float = 5.0
 
 func _ready() -> void:
+    spawn_interval = balance.spawn_interval
+    spawn_padding = balance.spawn_padding
+    enemies_to_spawn = balance.wave_base_enemies
+    shake_decay = balance.shake_decay
+
     if PlayerScene != null:
         _player = PlayerScene.instantiate() as Node2D
         if _player != null:
@@ -72,8 +78,8 @@ func _on_spawn_timeout() -> void:
         return
     if enemy.has_signal("enemy_died"):
         enemy.connect("enemy_died", _on_enemy_killed)
-    enemy.set("max_hp", 30 + (current_wave * 10))
-    enemy.set("speed", 100 + (current_wave * 5))
+    enemy.set("max_hp", balance.enemy_base_hp + (current_wave * balance.enemy_hp_per_wave))
+    enemy.set("speed", balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave))
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -88,12 +94,12 @@ func _on_spawn_timeout() -> void:
 
 func start_wave() -> void:
     _update_ui()
-    enemies_to_spawn = 10 + (current_wave * 5)
+    enemies_to_spawn = balance.wave_base_enemies + (current_wave * balance.wave_enemies_per_wave)
     enemies_alive = 0
     _spawn_timer.start()
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
-    gold += reward_gold
+    gold += balance.gold_per_kill
     enemies_alive = max(enemies_alive - 1, 0)
     _update_ui()
     apply_shake(5.0)
