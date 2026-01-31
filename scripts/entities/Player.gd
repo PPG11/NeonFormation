@@ -35,6 +35,7 @@ func _on_shoot_timeout() -> void:
 	var bullet := bullet_scene.instantiate() as Area2D
 	if bullet == null:
 		return
+	bullet.set("color", Color.GREEN)
 	bullet.global_position = global_position
 	get_tree().current_scene.add_child(bullet)
 
