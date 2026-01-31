@@ -1,9 +1,15 @@
 extends Area2D
 
 @export var speed: float = 100.0
+@export var max_hp: int = 30
+
+var current_hp: int
+var _base_modulate: Color
 
 func _ready() -> void:
 	add_to_group("enemy")
+	current_hp = max_hp
+	_base_modulate = modulate
 	var notifier := get_node_or_null("VisibleOnScreenNotifier2D") as VisibleOnScreenNotifier2D
 	if notifier == null:
 		notifier = VisibleOnScreenNotifier2D.new()
@@ -19,4 +25,16 @@ func _draw() -> void:
 	draw_rect(rect, Color.RED, false, 2.0)
 
 func _on_screen_exited() -> void:
+	queue_free()
+
+func take_damage(amount: int) -> void:
+	current_hp -= amount
+	modulate = Color.RED
+	var tween := create_tween()
+	tween.tween_property(self, "modulate", _base_modulate, 0.1)
+	if current_hp <= 0:
+		die()
+
+func die() -> void:
+	print("Enemy destroyed")
 	queue_free()

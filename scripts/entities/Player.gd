@@ -7,6 +7,7 @@ extends CharacterBody2D
 var body_parts: Array[Node2D] = []
 
 var _shoot_timer: Timer
+const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 
 func _ready() -> void:
 	_shoot_timer = Timer.new()
@@ -36,16 +37,18 @@ func _on_shoot_timeout() -> void:
 	if bullet == null:
 		return
 	bullet.set("color", Color.GREEN)
+	bullet.set("damage", 10)
 	bullet.global_position = global_position
 	get_tree().current_scene.add_child(bullet)
 
-func add_body() -> void:
+func add_body(unit_type: int) -> void:
 	if body_scene == null:
 		return
 	var body := body_scene.instantiate() as Node2D
 	if body == null:
 		return
 	var target: Node2D = self if body_parts.is_empty() else body_parts.back()
+	body.set("unit_type", unit_type)
 	body.set("target", target)
 	get_tree().current_scene.add_child(body)
 	var offset := body.get("follow_offset") as Vector2
@@ -55,6 +58,6 @@ func add_body() -> void:
 	body_parts.append(body)
 
 func _spawn_initial_bodies() -> void:
-	add_body()
-	add_body()
-	add_body()
+	add_body(SnakeBodyScript.ClassType.STRIKER)
+	add_body(SnakeBodyScript.ClassType.HEAVY)
+	add_body(SnakeBodyScript.ClassType.SPREAD)
