@@ -1,6 +1,6 @@
 extends Area2D
 
-signal enemy_died(amount: int)
+signal enemy_died(amount: int, pos: Vector2)
 
 @export var speed: float = 100.0
 @export var max_hp: int = 30
@@ -32,19 +32,19 @@ func _draw() -> void:
 	draw_rect(rect, Color.RED, false, 2.0)
 
 func _on_screen_exited() -> void:
-	_emit_enemy_died(0)
+	_emit_enemy_died(0, global_position)
 	queue_free()
 
 func _on_body_entered(body: Node) -> void:
 	if body is CharacterBody2D and body.has_method("die"):
 		body.call("die")
-		_emit_enemy_died(0)
+		_emit_enemy_died(0, global_position)
 		queue_free()
 
 func _on_area_entered(area: Area2D) -> void:
 	if area != null and area.get_script() == SnakeBodyScript:
 		area.queue_free()
-		_emit_enemy_died(0)
+		_emit_enemy_died(0, global_position)
 		queue_free()
 
 func take_damage(amount: int) -> void:
@@ -57,11 +57,11 @@ func take_damage(amount: int) -> void:
 
 func die() -> void:
 	print("Enemy destroyed")
-	_emit_enemy_died(5)
+	_emit_enemy_died(5, global_position)
 	queue_free()
 
-func _emit_enemy_died(amount: int) -> void:
+func _emit_enemy_died(amount: int, pos: Vector2) -> void:
 	if _did_emit:
 		return
 	_did_emit = true
-	emit_signal("enemy_died", amount)
+	emit_signal("enemy_died", amount, pos)
