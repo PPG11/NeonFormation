@@ -2,6 +2,7 @@ extends Node
 
 const EnemyScene: PackedScene = preload("res://scenes/entities/Enemy.tscn")
 const PlayerScene: PackedScene = preload("res://scenes/entities/Player.tscn")
+const ShopUIScene: PackedScene = preload("res://scenes/ui/ShopUI.tscn")
 
 @export var spawn_interval: float = 1.0
 @export var spawn_padding: float = 20.0
@@ -12,15 +13,24 @@ var enemies_to_spawn: int = 10
 var enemies_alive: int = 0
 
 var _spawn_timer: Timer
+var _player: Node2D
+var _shop_ui: CanvasLayer
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
 
 func _ready() -> void:
 	if PlayerScene != null:
-		var player := PlayerScene.instantiate() as Node2D
-		if player != null:
-			add_child(player)
-			player.position = Vector2(180.0, 550.0)
+		_player = PlayerScene.instantiate() as Node2D
+		if _player != null:
+			add_child(_player)
+			_player.position = Vector2(180.0, 550.0)
+
+	if ShopUIScene != null:
+		_shop_ui = ShopUIScene.instantiate() as CanvasLayer
+		if _shop_ui != null:
+			add_child(_shop_ui)
+			if _shop_ui.has_signal("upgrade_selected"):
+				_shop_ui.connect("upgrade_selected", _on_upgrade_selected)
 
 	_spawn_timer = Timer.new()
 	_spawn_timer.wait_time = spawn_interval
@@ -65,12 +75,17 @@ func _on_enemy_killed(reward_gold: int) -> void:
 	_update_ui()
 	if enemies_alive == 0 and enemies_to_spawn == 0:
 		print("Wave Complete")
-		await get_tree().create_timer(2.0).timeout
-		next_wave()
+		if _shop_ui != null and _shop_ui.has_method("show_shop"):
+			_shop_ui.call("show_shop")
 
 func next_wave() -> void:
 	current_wave += 1
 	start_wave()
+
+func _on_upgrade_selected(unit_type: int) -> void:
+	if _player != null and _player.has_method("add_body"):
+		_player.call("add_body", unit_type)
+	next_wave()
 
 func _update_ui() -> void:
 	if _wave_label != null:
