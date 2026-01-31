@@ -57,11 +57,24 @@ func add_body(unit_type: int) -> void:
 	body.set("unit_type", unit_type)
 	body.set("target", target)
 	get_tree().current_scene.add_child(body)
+	body.tree_exited.connect(_on_body_exited.bind(body))
 	var offset := body.get("follow_offset") as Vector2
 	if offset == null:
 		offset = Vector2.ZERO
 	body.global_position = target.global_transform * offset
 	body_parts.append(body)
+
+func _on_body_exited(body: Node) -> void:
+	body_parts.erase(body)
+	_refresh_body_targets()
+
+func _refresh_body_targets() -> void:
+	for i in body_parts.size():
+		var part := body_parts[i]
+		if part == null:
+			continue
+		var target: Node2D = self if i == 0 else body_parts[i - 1]
+		part.set("target", target)
 
 func _spawn_initial_bodies() -> void:
 	add_body(SnakeBodyScript.ClassType.STRIKER)

@@ -14,6 +14,7 @@ var _shoot_timer: Timer
 
 func _ready() -> void:
 	add_to_group("player_team")
+	area_entered.connect(_on_area_entered)
 	_shoot_timer = Timer.new()
 	_shoot_timer.wait_time = _get_shoot_interval()
 	_shoot_timer.one_shot = false
@@ -85,3 +86,7 @@ func _set_unit_type(value: ClassType) -> void:
 	if _shoot_timer != null:
 		_shoot_timer.wait_time = _get_shoot_interval()
 	queue_redraw()
+
+func _on_area_entered(area: Area2D) -> void:
+	if area.is_in_group("enemy_team"):
+		queue_free()
