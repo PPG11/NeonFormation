@@ -44,8 +44,10 @@ func _ready() -> void:
         _shop_ui = ShopUIScene.instantiate() as CanvasLayer
         if _shop_ui != null:
             add_child(_shop_ui)
-            if _shop_ui.has_signal("upgrade_selected"):
-                _shop_ui.connect("upgrade_selected", _on_upgrade_selected)
+            if _shop_ui.has_signal("item_purchased"):
+                _shop_ui.connect("item_purchased", _on_item_purchased)
+            if _shop_ui.has_signal("shop_closed"):
+                _shop_ui.connect("shop_closed", _on_shop_closed)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
@@ -160,12 +162,14 @@ func next_wave() -> void:
     current_wave += 1
     start_wave()
 
-func _on_upgrade_selected(unit_type: int) -> void:
-    if gold >= balance.unit_price:
-        gold -= balance.unit_price
-        _update_ui()
-        if _player != null and _player.has_method("add_body"):
-            _player.call("add_body", unit_type)
+func _on_item_purchased(unit_type: int, cost: int) -> void:
+    # 商店已经扣除了金币，这里只需要同步并添加单位
+    gold -= cost
+    _update_ui()
+    if _player != null and _player.has_method("add_body"):
+        _player.call("add_body", unit_type)
+
+func _on_shop_closed() -> void:
     next_wave()
 
 func apply_shake(strength: float) -> void:
