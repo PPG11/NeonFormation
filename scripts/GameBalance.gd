@@ -15,6 +15,13 @@ extends Node
 @export var heavy_scale: float = 2.0
 @export var spread_damage: int = 12
 @export var spread_interval: float = 0.5
+@export var striker_crit_chance: float = 0.2
+@export var striker_crit_multiplier: float = 2.0
+@export var snake_body_hp: int = 3
+
+@export var unit_cost_striker: int = 15
+@export var unit_cost_heavy: int = 25
+@export var unit_cost_spread: int = 20
 
 # Synergy buff
 @export var synergy_striker_threshold: int = 2
@@ -33,6 +40,8 @@ extends Node
 @export_group("Enemy")
 @export var enemy_base_hp: int = 60
 @export var enemy_hp_per_wave: int = 15
+@export var enemy_hp_scaling_factor: float = 1.15
+@export var enemy_damage_scaling_factor: float = 1.1
 @export var enemy_base_speed: float = 100.0
 @export var enemy_speed_per_wave: float = 5.0
 @export var enemy_bullet_damage: int = 15
@@ -42,6 +51,8 @@ extends Node
 @export_group("Wave")
 @export var wave_base_enemies: int = 10
 @export var wave_enemies_per_wave: int = 5
+@export var boss_base_hp: int = 500
+@export var boss_hp_per_wave: int = 100
 @export var spawn_interval: float = 1.0
 @export var spawn_padding: float = 20.0
 @export var gold_per_kill: int = 5
