@@ -5,6 +5,8 @@ const PlayerScene: PackedScene = preload("res://scenes/entities/Player.tscn")
 const ShopUIScene: PackedScene = preload("res://scenes/ui/ShopUI.tscn")
 const ExplosionScene: PackedScene = preload("res://scenes/effects/Explosion.tscn")
 const EnemyScript: Script = preload("res://scripts/entities/Enemy.gd")
+const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
+const BossScene: PackedScene = preload("res://scenes/entities/Boss.tscn")
 
 @export var spawn_interval: float = 1.0
 @export var spawn_padding: float = 20.0
@@ -17,10 +19,12 @@ var enemies_alive: int = 0
 var _spawn_timer: Timer
 var _player: Node2D
 var _shop_ui: CanvasLayer
+var _active_boss: Area2D = null
 @onready var _camera: Camera2D = $Camera2D
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
 @onready var _hp_bar: ProgressBar = $CanvasLayer/HPBar
+@onready var _boss_hp_bar: ProgressBar = $CanvasLayer/BossHPBar
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
 var shake_strength: float = 0.0
@@ -66,6 +70,17 @@ func _process(delta: float) -> void:
             shake_strength = 0.0
             _camera.offset = Vector2.ZERO
     _update_hp_bar()
+    _update_boss_hp_bar()
+
+func _update_boss_hp_bar() -> void:
+    if _boss_hp_bar == null: return
+
+    if is_instance_valid(_active_boss):
+        _boss_hp_bar.visible = true
+        _boss_hp_bar.max_value = float(_active_boss.max_hp)
+        _boss_hp_bar.value = float(_active_boss.current_hp)
+    else:
+        _boss_hp_bar.visible = false
 
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
@@ -78,7 +93,12 @@ func _on_spawn_timeout() -> void:
         return
     if enemy.has_signal("enemy_died"):
         enemy.connect("enemy_died", _on_enemy_killed)
-    enemy.set("max_hp", balance.enemy_base_hp + (current_wave * balance.enemy_hp_per_wave))
+
+    var hp_scaling = pow(balance.enemy_hp_scaling_factor, current_wave - 1)
+    var damage_scaling = pow(balance.enemy_damage_scaling_factor, current_wave - 1)
+
+    enemy.set("max_hp", int(balance.enemy_base_hp * hp_scaling))
+    enemy.set("damage_mult", damage_scaling)
     enemy.set("speed", balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave))
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
@@ -94,9 +114,26 @@ func _on_spawn_timeout() -> void:
 
 func start_wave() -> void:
     _update_ui()
-    enemies_to_spawn = balance.wave_base_enemies + (current_wave * balance.wave_enemies_per_wave)
-    enemies_alive = 0
-    _spawn_timer.start()
+
+    if current_wave % 5 == 0:
+        # Boss Wave
+        enemies_to_spawn = 0
+        enemies_alive = 1
+        var boss = BossScene.instantiate() as Area2D
+        if boss.has_signal("boss_died"):
+            boss.connect("boss_died", _on_enemy_killed)
+
+        var hp = balance.boss_base_hp + (balance.boss_hp_per_wave * (current_wave / 5 - 1))
+        boss.set("max_hp", hp)
+        get_tree().current_scene.add_child(boss)
+        _active_boss = boss
+        boss.tree_exiting.connect(func(): _active_boss = null)
+
+        _spawn_timer.stop()
+    else:
+        enemies_to_spawn = balance.wave_base_enemies + (current_wave * balance.wave_enemies_per_wave)
+        enemies_alive = 0
+        _spawn_timer.start()
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
     gold += reward_gold
@@ -107,16 +144,30 @@ func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
     if enemies_alive == 0 and enemies_to_spawn == 0:
         print("Wave Complete")
         if _shop_ui != null and _shop_ui.has_method("show_shop"):
-            _shop_ui.call("show_shop")
+            _shop_ui.call("show_shop", gold)
 
 func next_wave() -> void:
     current_wave += 1
     start_wave()
 
 func _on_upgrade_selected(unit_type: int) -> void:
-    if _player != null and _player.has_method("add_body"):
-        _player.call("add_body", unit_type)
-    next_wave()
+    var cost = _get_unit_cost(unit_type)
+    if gold >= cost:
+        gold -= cost
+        _update_ui()
+        if _player != null and _player.has_method("add_body"):
+            _player.call("add_body", unit_type)
+        next_wave()
+
+func _get_unit_cost(t: int) -> int:
+    match t:
+        SnakeBodyScript.ClassType.STRIKER:
+            return balance.unit_cost_striker
+        SnakeBodyScript.ClassType.HEAVY:
+            return balance.unit_cost_heavy
+        SnakeBodyScript.ClassType.SPREAD:
+            return balance.unit_cost_spread
+    return 0
 
 func apply_shake(strength: float) -> void:
     shake_strength = max(shake_strength, strength)

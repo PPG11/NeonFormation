@@ -17,6 +17,7 @@ var synergy_bonuses: Dictionary = {
 }
 
 var _shoot_timer: Timer
+var _hp_bar: TextureProgressBar
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
@@ -25,6 +26,24 @@ func _ready() -> void:
     max_hp = balance.player_max_hp
     current_hp = max_hp
     add_to_group("player_team")
+
+    # Create HP Bar
+    _hp_bar = TextureProgressBar.new()
+    _hp_bar.fill_mode = TextureProgressBar.FILL_LEFT_TO_RIGHT
+    _hp_bar.value = 100
+    # Create simple textures
+    var width = 40
+    var height = 5
+    var bg_image = Image.create(width, height, false, Image.FORMAT_RGBA8)
+    bg_image.fill(Color.RED)
+    var progress_image = Image.create(width, height, false, Image.FORMAT_RGBA8)
+    progress_image.fill(Color.GREEN)
+
+    _hp_bar.texture_under = ImageTexture.create_from_image(bg_image)
+    _hp_bar.texture_progress = ImageTexture.create_from_image(progress_image)
+    _hp_bar.position = Vector2(-width/2, -30)
+    add_child(_hp_bar)
+
     _shoot_timer = Timer.new()
     _shoot_timer.wait_time = shoot_interval
     _shoot_timer.one_shot = false
@@ -37,6 +56,10 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
     var target := get_global_mouse_position()
     global_position = global_position.lerp(target, 0.1)
+
+    if _hp_bar:
+        _hp_bar.max_value = float(max_hp)
+        _hp_bar.value = float(current_hp)
 
 func _draw() -> void:
     var p1 := Vector2(0.0, -16.0)
@@ -100,6 +123,61 @@ func add_body(unit_type: int) -> void:
     body.global_position = target.global_transform * offset
     body_parts.append(body)
     recalculate_synergies()
+    check_for_merges()
+
+func check_for_merges() -> void:
+    # Group bodies by type and level
+    var groups = {}
+    for body in body_parts:
+        var type = body.get("unit_type")
+        var level = body.get("level")
+        var key = "%d_%d" % [type, level]
+        if not groups.has(key):
+            groups[key] = []
+        groups[key].append(body)
+
+    for key in groups:
+        var bodies = groups[key]
+        if bodies.size() >= 3:
+            # Found 3 mergeable units
+            var first_body = bodies[0]
+            var type = first_body.get("unit_type")
+            var level = first_body.get("level")
+            var new_level = level + 1
+
+            # Find indices
+            var indices = []
+            for b in bodies.slice(0, 3):
+                indices.append(body_parts.find(b))
+            indices.sort()
+
+            # Identify insertion index (the lowest index among the 3)
+            var insert_index = indices[0]
+            var ref_pos = body_parts[insert_index].global_position
+
+            # Remove bodies (careful with indices shifting, so remove by reference)
+            for b in bodies.slice(0, 3):
+                body_parts.erase(b)
+                b.queue_free()
+
+            # Instantiate new body
+            var new_body = body_scene.instantiate() as Node2D
+            new_body.set("unit_type", type)
+            new_body.set("level", new_level)
+            new_body.global_position = ref_pos
+            get_tree().current_scene.add_child(new_body)
+            new_body.tree_exited.connect(_on_body_exited.bind(new_body))
+
+            # Insert at correct position
+            body_parts.insert(insert_index, new_body)
+
+            # Refresh links
+            _refresh_body_targets()
+            recalculate_synergies()
+
+            # Check for recursive merges (e.g. 3 lvl 1 -> 1 lvl 2, making 3 lvl 2s)
+            check_for_merges()
+            return
 
 func _on_body_exited(body: Node) -> void:
     body_parts.erase(body)

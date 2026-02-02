@@ -8,6 +8,7 @@ enum EnemyType { DASHER, SHOOTER, BASIC }
 @export var max_hp: int = 60
 @export var enemy_type: EnemyType = EnemyType.BASIC : set = _set_enemy_type
 
+var damage_mult: float = 1.0
 var current_hp: int
 var _base_modulate: Color
 var _did_emit: bool = false
@@ -16,15 +17,36 @@ const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 
 var _shoot_timer: Timer
+var _hp_bar: TextureProgressBar
 
 func _ready() -> void:
     speed = balance.enemy_base_speed
-    max_hp = balance.enemy_base_hp
+    # max_hp is set by Main.gd usually, but we set a default
+    if current_hp == 0: current_hp = max_hp
+
     add_to_group("enemy")
     add_to_group("enemy_team")
     monitoring = true
-    current_hp = max_hp
     _base_modulate = modulate
+
+    # Create HP Bar
+    _hp_bar = TextureProgressBar.new()
+    _hp_bar.fill_mode = TextureProgressBar.FILL_LEFT_TO_RIGHT
+    _hp_bar.value = 100
+    # Create simple textures
+    var width = 20
+    var height = 3
+    var bg_image = Image.create(width, height, false, Image.FORMAT_RGBA8)
+    bg_image.fill(Color.RED)
+    var progress_image = Image.create(width, height, false, Image.FORMAT_RGBA8)
+    progress_image.fill(Color.GREEN)
+
+    _hp_bar.texture_under = ImageTexture.create_from_image(bg_image)
+    _hp_bar.texture_progress = ImageTexture.create_from_image(progress_image)
+    _hp_bar.position = Vector2(-width/2, -20)
+    _hp_bar.visible = false
+    add_child(_hp_bar)
+
     _shoot_timer = Timer.new()
     _shoot_timer.wait_time = balance.shooter_fire_interval
     _shoot_timer.one_shot = false
@@ -95,6 +117,12 @@ func _on_area_entered(area: Area2D) -> void:
 
 func take_damage(amount: int) -> void:
     current_hp -= amount
+
+    if _hp_bar:
+        _hp_bar.max_value = float(max_hp)
+        _hp_bar.value = float(current_hp)
+        _hp_bar.visible = true
+
     modulate = Color.RED
     var tween := create_tween()
     tween.tween_property(self, "modulate", _base_modulate, 0.1)
@@ -126,7 +154,7 @@ func _on_shoot_timer_timeout() -> void:
         dir = Vector2.DOWN
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
-    bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("damage", int(balance.enemy_bullet_damage * damage_mult))
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)
