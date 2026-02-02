@@ -118,15 +118,16 @@ func _on_screen_exited() -> void:
     queue_free()
 
 func _on_body_entered(body: Node) -> void:
-    if body is CharacterBody2D and body.has_method("die"):
-        body.call("die")
+    if body is CharacterBody2D and body.has_method("take_damage"):
+        # 敌人碰撞玩家造成伤害而不是直接秒杀
+        body.call("take_damage", 8)
         _emit_enemy_died(0, global_position)
         queue_free()
 
 func _on_area_entered(area: Area2D) -> void:
     if area != null and area.get_script() == SnakeBodyScript:
         if area.has_method("take_damage"):
-            area.take_damage(10)
+            area.take_damage(20)
         else:
             area.queue_free()
         _emit_enemy_died(0, global_position)

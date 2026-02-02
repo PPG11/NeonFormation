@@ -2,7 +2,7 @@ extends Node
 
 # ==================== Player ====================
 @export_group("Player")
-@export var player_max_hp: int = 10
+@export var player_max_hp: int = 100
 @export var player_main_damage: int = 8
 @export var player_shoot_interval: float = 0.2
 
@@ -79,7 +79,7 @@ extends Node
 @export var enemy_base_speed: float = 100.0
 @export var enemy_speed_per_wave: float = 5.0
 @export var enemy_speed_exponent: float = 1.02
-@export var enemy_bullet_damage: int = 15
+@export var enemy_bullet_damage: int = 10
 @export var shooter_fire_interval: float = 1.2
 
 # ==================== Boss ====================
