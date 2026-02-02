@@ -8,6 +8,10 @@ extends CharacterBody2D
 var current_hp: int = 10
 var is_invincible: bool = false
 
+# Team shield system
+var team_shield: int = 0
+var _shield_visual_alpha: float = 0.0
+
 var body_parts: Array[Node2D] = []
 var class_counts: Dictionary = {}
 var synergy_bonuses: Dictionary = {
@@ -69,11 +73,28 @@ func _update_floating_hp() -> void:
         _hp_bar.max_value = max_hp
         _hp_bar.value = current_hp
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
     var target := get_global_mouse_position()
     global_position = global_position.lerp(target, 0.1)
 
+    # Update shield visual alpha
+    if team_shield > 0:
+        _shield_visual_alpha = min(_shield_visual_alpha + delta * 3.0, 1.0)
+    else:
+        _shield_visual_alpha = max(_shield_visual_alpha - delta * 2.0, 0.0)
+
+    queue_redraw()
+
 func _draw() -> void:
+    # Draw team shield if active
+    if _shield_visual_alpha > 0.0:
+        var shield_color := Color(0.3, 0.7, 1.0, 0.3 * _shield_visual_alpha)
+        var shield_radius := 24.0
+        draw_circle(Vector2.ZERO, shield_radius, shield_color)
+        # Shield border
+        var border_color := Color(0.5, 0.8, 1.0, 0.6 * _shield_visual_alpha)
+        draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, border_color, 2.0)
+
     var p1 := Vector2(0.0, -16.0)
     var p2 := Vector2(-8.0, 10.0)
     var p3 := Vector2(8.0, 10.0)
@@ -90,6 +111,26 @@ func _deferred_die() -> void:
 func take_damage(amount: int) -> void:
     if is_invincible:
         return
+
+    # Shield absorbs damage first
+    if team_shield > 0:
+        var absorbed: int = min(team_shield, amount)
+        team_shield -= absorbed
+        amount -= absorbed
+
+        # Visual feedback for shield hit
+        modulate = Color(0.5, 0.8, 1.0, 1.2)
+        var tween := create_tween()
+        tween.tween_property(self, "modulate", Color.GREEN, 0.2)
+
+        print("[SHIELD] Absorbed ", absorbed, " damage! Remaining: ", team_shield)
+
+        if amount <= 0:
+            return  # All damage absorbed
+
+        print("[SHIELD] Shield broken! Taking ", amount, " damage")
+
+    # Take remaining damage to HP
     current_hp -= amount
     _update_floating_hp()
     if current_hp <= 0:
@@ -178,7 +219,13 @@ func recalculate_synergies() -> void:
     class_counts = {
         "striker": 0,
         "heavy": 0,
-        "spread": 0
+        "spread": 0,
+        "burst": 0,
+        "laser": 0,
+        "ricochet": 0,
+        "charge": 0,
+        "shield": 0,
+        "support": 0
     }
     for part in body_parts:
         if part == null:
@@ -190,10 +237,34 @@ func recalculate_synergies() -> void:
             class_counts["heavy"] += 1
         elif t == SnakeBodyScript.ClassType.SPREAD:
             class_counts["spread"] += 1
+        elif t == SnakeBodyScript.ClassType.BURST:
+            class_counts["burst"] += 1
+        elif t == SnakeBodyScript.ClassType.LASER:
+            class_counts["laser"] += 1
+        elif t == SnakeBodyScript.ClassType.RICOCHET:
+            class_counts["ricochet"] += 1
+        elif t == SnakeBodyScript.ClassType.CHARGE:
+            class_counts["charge"] += 1
+        elif t == SnakeBodyScript.ClassType.SHIELD:
+            class_counts["shield"] += 1
+        elif t == SnakeBodyScript.ClassType.SUPPORT:
+            class_counts["support"] += 1
 
     synergy_bonuses["attack_speed"] = 1.0
     synergy_bonuses["damage_mult"] = 1.0
     synergy_bonuses["size_mult"] = 1.0
+    synergy_bonuses["burst_shots"] = 3
+    synergy_bonuses["burst_cooldown_mult"] = 1.0
+    synergy_bonuses["laser_duration_bonus"] = 0.0
+    synergy_bonuses["laser_damage_mult"] = 1.0
+    synergy_bonuses["ricochet_bounces"] = balance.ricochet_max_bounces
+    synergy_bonuses["ricochet_range_mult"] = 1.0
+    synergy_bonuses["charge_shots_needed"] = balance.charge_shots_to_charge
+    synergy_bonuses["charge_damage_mult"] = 1.0
+    synergy_bonuses["shield_absorption_mult"] = 1.0
+    synergy_bonuses["shield_gen_interval_mult"] = 1.0
+    synergy_bonuses["support_buff_mult"] = 1.0
+    synergy_bonuses["support_damage_bonus"] = 0.0
 
     if class_counts["striker"] >= 4:
         synergy_bonuses["attack_speed"] = balance.synergy_striker_attack_speed_high
@@ -206,6 +277,36 @@ func recalculate_synergies() -> void:
     if class_counts["spread"] >= balance.synergy_spread_threshold:
         synergy_bonuses["size_mult"] = balance.synergy_spread_size_mult
 
+    if class_counts["burst"] >= 3:
+        synergy_bonuses["burst_cooldown_mult"] = 1.0 - balance.synergy_burst_cooldown_reduction
+    if class_counts["burst"] >= balance.synergy_burst_threshold:
+        synergy_bonuses["burst_shots"] = 3 + balance.synergy_burst_shots_bonus
+
+    if class_counts["laser"] >= 3:
+        synergy_bonuses["laser_damage_mult"] = balance.synergy_laser_damage_mult
+    if class_counts["laser"] >= balance.synergy_laser_threshold:
+        synergy_bonuses["laser_duration_bonus"] = balance.synergy_laser_duration_bonus
+
+    if class_counts["ricochet"] >= 3:
+        synergy_bonuses["ricochet_range_mult"] = balance.synergy_ricochet_range_mult
+    if class_counts["ricochet"] >= balance.synergy_ricochet_threshold:
+        synergy_bonuses["ricochet_bounces"] = balance.ricochet_max_bounces + balance.synergy_ricochet_bounce_bonus
+
+    if class_counts["charge"] >= 3:
+        synergy_bonuses["charge_damage_mult"] = balance.synergy_charge_damage_mult
+    if class_counts["charge"] >= balance.synergy_charge_threshold:
+        synergy_bonuses["charge_shots_needed"] = balance.charge_shots_to_charge - balance.synergy_charge_shots_reduction
+
+    if class_counts["shield"] >= 3:
+        synergy_bonuses["shield_gen_interval_mult"] = 1.0 - balance.synergy_shield_gen_reduction
+    if class_counts["shield"] >= balance.synergy_shield_threshold:
+        synergy_bonuses["shield_absorption_mult"] = balance.synergy_shield_absorption_mult
+
+    if class_counts["support"] >= 3:
+        synergy_bonuses["support_damage_bonus"] = balance.synergy_support_damage_bonus
+    if class_counts["support"] >= balance.synergy_support_threshold:
+        synergy_bonuses["support_buff_mult"] = balance.synergy_support_buff_mult
+
     print("Active Synergies: ", synergy_bonuses)
     for part in body_parts:
         if part != null and part.has_method("update_stats"):
@@ -215,3 +316,46 @@ func _spawn_initial_bodies() -> void:
     add_body(SnakeBodyScript.ClassType.STRIKER)
     add_body(SnakeBodyScript.ClassType.HEAVY)
     add_body(SnakeBodyScript.ClassType.SPREAD)
+    # Add new classes for testing
+    add_body(SnakeBodyScript.ClassType.BURST)
+    add_body(SnakeBodyScript.ClassType.LASER)
+    add_body(SnakeBodyScript.ClassType.RICOCHET)
+    add_body(SnakeBodyScript.ClassType.CHARGE)
+    add_body(SnakeBodyScript.ClassType.SHIELD)
+    add_body(SnakeBodyScript.ClassType.SUPPORT)
+
+func _broadcast_shield_to_team() -> void:
+    # Notify all body parts to update their shield visuals
+    for part in body_parts:
+        if part != null and part.has_method("update_team_shield"):
+            part.call("update_team_shield", team_shield)
+
+func get_team_shield() -> int:
+    return team_shield
+
+func consume_team_shield(amount: int) -> int:
+    var absorbed: int = min(team_shield, amount)
+    team_shield -= absorbed
+    if absorbed > 0:
+        _broadcast_shield_to_team()
+    return absorbed
+
+# Add team shield (called by Shield units)
+func add_shield(absorption: int) -> void:
+    # Add to team shield pool
+    team_shield += absorption
+
+    # Visual feedback - blue flash
+    modulate = Color(0.5, 0.7, 1.0, 1.5)
+    var tween := create_tween()
+    tween.tween_property(self, "modulate", Color.GREEN, 0.4)
+
+    # Screen shake
+    var main := get_tree().current_scene
+    if main != null and main.has_method("apply_shake"):
+        main.call("apply_shake", 5.0)
+
+    print("[SHIELD] TEAM SHIELD: +", absorption, " (Total: ", team_shield, ")")
+
+    # Notify all team members
+    _broadcast_shield_to_team()

@@ -36,7 +36,13 @@ func _generate_options() -> void:
     var types := [
         SnakeBodyScript.ClassType.STRIKER,
         SnakeBodyScript.ClassType.HEAVY,
-        SnakeBodyScript.ClassType.SPREAD
+        SnakeBodyScript.ClassType.SPREAD,
+        SnakeBodyScript.ClassType.BURST,
+        SnakeBodyScript.ClassType.LASER,
+        SnakeBodyScript.ClassType.RICOCHET,
+        SnakeBodyScript.ClassType.CHARGE,
+        SnakeBodyScript.ClassType.SHIELD,
+        SnakeBodyScript.ClassType.SUPPORT
     ]
     types.shuffle()
     _options.clear()
@@ -90,4 +96,16 @@ func _type_to_label(t: int) -> String:
             return "Heavy"
         SnakeBodyScript.ClassType.SPREAD:
             return "Spread"
+        SnakeBodyScript.ClassType.BURST:
+            return "Burst"
+        SnakeBodyScript.ClassType.LASER:
+            return "Laser"
+        SnakeBodyScript.ClassType.RICOCHET:
+            return "Ricochet"
+        SnakeBodyScript.ClassType.CHARGE:
+            return "Charge"
+        SnakeBodyScript.ClassType.SHIELD:
+            return "Shield"
+        SnakeBodyScript.ClassType.SUPPORT:
+            return "Support"
     return "Unknown"
