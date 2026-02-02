@@ -4,6 +4,7 @@ const EnemyScene: PackedScene = preload("res://scenes/entities/Enemy.tscn")
 const PlayerScene: PackedScene = preload("res://scenes/entities/Player.tscn")
 const ShopUIScene: PackedScene = preload("res://scenes/ui/ShopUI.tscn")
 const ExplosionScene: PackedScene = preload("res://scenes/effects/Explosion.tscn")
+const BossScene: PackedScene = preload("res://scenes/entities/Boss.tscn")
 const EnemyScript: Script = preload("res://scripts/entities/Enemy.gd")
 
 @export var spawn_interval: float = 1.0
@@ -17,6 +18,7 @@ var enemies_alive: int = 0
 var _spawn_timer: Timer
 var _player: Node2D
 var _shop_ui: CanvasLayer
+var _boss_hp_bar: ProgressBar
 @onready var _camera: Camera2D = $Camera2D
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
@@ -45,6 +47,13 @@ func _ready() -> void:
             if _shop_ui.has_signal("upgrade_selected"):
                 _shop_ui.connect("upgrade_selected", _on_upgrade_selected)
 
+    _boss_hp_bar = ProgressBar.new()
+    _boss_hp_bar.visible = false
+    _boss_hp_bar.size = Vector2(240, 20)
+    _boss_hp_bar.position = Vector2(60, 80)
+    _boss_hp_bar.modulate = Color.RED
+    $CanvasLayer.add_child(_boss_hp_bar)
+
     _spawn_timer = Timer.new()
     _spawn_timer.wait_time = spawn_interval
     _spawn_timer.one_shot = false
@@ -67,6 +76,13 @@ func _process(delta: float) -> void:
             _camera.offset = Vector2.ZERO
     _update_hp_bar()
 
+    if _boss_hp_bar.visible:
+        var bosses = get_tree().get_nodes_in_group("enemy")
+        if bosses.size() > 0:
+            var b = bosses[0]
+            if "current_hp" in b:
+                _boss_hp_bar.value = b.current_hp
+
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
         _spawn_timer.stop()
@@ -78,8 +94,13 @@ func _on_spawn_timeout() -> void:
         return
     if enemy.has_signal("enemy_died"):
         enemy.connect("enemy_died", _on_enemy_killed)
-    enemy.set("max_hp", balance.enemy_base_hp + (current_wave * balance.enemy_hp_per_wave))
-    enemy.set("speed", balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave))
+
+    var hp_val = (balance.enemy_base_hp + (current_wave * balance.enemy_hp_per_wave)) * pow(balance.enemy_hp_exponent, max(0, current_wave - 1))
+    enemy.set("max_hp", int(hp_val))
+
+    var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
+    enemy.set("speed", speed_val)
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -94,9 +115,35 @@ func _on_spawn_timeout() -> void:
 
 func start_wave() -> void:
     _update_ui()
+
+    if current_wave % 5 == 0:
+        _spawn_boss_wave()
+        return
+
     enemies_to_spawn = balance.wave_base_enemies + (current_wave * balance.wave_enemies_per_wave)
     enemies_alive = 0
     _spawn_timer.start()
+
+func _spawn_boss_wave() -> void:
+    if BossScene == null: return
+    var boss = BossScene.instantiate()
+    var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
+    boss.max_hp = hp
+    boss.current_hp = hp
+    boss.global_position = Vector2(180, -50)
+    get_tree().current_scene.add_child(boss)
+    boss.boss_died.connect(_on_boss_killed)
+
+    _boss_hp_bar.max_value = hp
+    _boss_hp_bar.value = hp
+    _boss_hp_bar.visible = true
+
+    enemies_to_spawn = 0
+    enemies_alive = 1
+
+func _on_boss_killed(pos: Vector2) -> void:
+    _boss_hp_bar.visible = false
+    _on_enemy_killed(500, pos)
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
     gold += reward_gold
@@ -107,15 +154,18 @@ func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
     if enemies_alive == 0 and enemies_to_spawn == 0:
         print("Wave Complete")
         if _shop_ui != null and _shop_ui.has_method("show_shop"):
-            _shop_ui.call("show_shop")
+            _shop_ui.call("show_shop", gold)
 
 func next_wave() -> void:
     current_wave += 1
     start_wave()
 
 func _on_upgrade_selected(unit_type: int) -> void:
-    if _player != null and _player.has_method("add_body"):
-        _player.call("add_body", unit_type)
+    if gold >= balance.unit_price:
+        gold -= balance.unit_price
+        _update_ui()
+        if _player != null and _player.has_method("add_body"):
+            _player.call("add_body", unit_type)
     next_wave()
 
 func apply_shake(strength: float) -> void:

@@ -17,6 +17,7 @@ var synergy_bonuses: Dictionary = {
 }
 
 var _shoot_timer: Timer
+var _hp_bar: TextureProgressBar
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
@@ -32,7 +33,41 @@ func _ready() -> void:
     add_child(_shoot_timer)
     _shoot_timer.timeout.connect(_on_shoot_timeout)
 
+    _setup_hp_bar()
+
     call_deferred("_spawn_initial_bodies")
+
+func _setup_hp_bar() -> void:
+    _hp_bar = TextureProgressBar.new()
+
+    var tex_under = GradientTexture2D.new()
+    tex_under.width = 32
+    tex_under.height = 4
+    tex_under.fill_from = Vector2(0, 0)
+    tex_under.fill_to = Vector2(0, 1)
+    var grad_under = Gradient.new()
+    grad_under.add_point(0.0, Color(0.2, 0.2, 0.2))
+    tex_under.gradient = grad_under
+
+    var tex_prog = GradientTexture2D.new()
+    tex_prog.width = 32
+    tex_prog.height = 4
+    tex_prog.fill_from = Vector2(0, 0)
+    tex_prog.fill_to = Vector2(0, 1)
+    var grad_prog = Gradient.new()
+    grad_prog.add_point(0.0, Color.GREEN)
+    tex_prog.gradient = grad_prog
+
+    _hp_bar.texture_under = tex_under
+    _hp_bar.texture_progress = tex_prog
+    _hp_bar.position = Vector2(-16, -24)
+    add_child(_hp_bar)
+    _update_floating_hp()
+
+func _update_floating_hp() -> void:
+    if _hp_bar:
+        _hp_bar.max_value = max_hp
+        _hp_bar.value = current_hp
 
 func _physics_process(_delta: float) -> void:
     var target := get_global_mouse_position()
@@ -56,6 +91,7 @@ func take_damage(amount: int) -> void:
     if is_invincible:
         return
     current_hp -= amount
+    _update_floating_hp()
     if current_hp <= 0:
         die()
         return
@@ -84,6 +120,29 @@ func _on_shoot_timeout() -> void:
     get_tree().current_scene.add_child(bullet)
 
 func add_body(unit_type: int) -> void:
+    _add_body_internal(unit_type, 1)
+
+func _add_body_internal(unit_type: int, level: int) -> void:
+    var matching_indices = []
+    for i in range(body_parts.size()):
+        var part = body_parts[i]
+        if part != null and part.get("unit_type") == unit_type and part.get("level") == level:
+            matching_indices.append(i)
+            if matching_indices.size() == 2:
+                break
+
+    if matching_indices.size() == 2:
+        matching_indices.sort()
+        matching_indices.reverse()
+        for idx in matching_indices:
+            var part = body_parts[idx]
+            body_parts.remove_at(idx)
+            part.queue_free()
+
+        _refresh_body_targets()
+        _add_body_internal(unit_type, level + 1)
+        return
+
     if body_scene == null:
         return
     var body := body_scene.instantiate() as Node2D
@@ -91,6 +150,7 @@ func add_body(unit_type: int) -> void:
         return
     var target: Node2D = self if body_parts.is_empty() else body_parts.back()
     body.set("unit_type", unit_type)
+    body.set("level", level)
     body.set("target", target)
     get_tree().current_scene.add_child(body)
     body.tree_exited.connect(_on_body_exited.bind(body))

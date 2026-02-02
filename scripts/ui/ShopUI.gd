@@ -3,6 +3,7 @@ extends CanvasLayer
 signal upgrade_selected(upgrade_type: int)
 
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
+@onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
 @onready var _buttons: Array[Button] = [
     $Control/HBoxContainer/Button1,
@@ -11,13 +12,15 @@ const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 ]
 
 var _options: Array[int] = []
+var _current_gold: int = 0
 
 func _ready() -> void:
     visible = false
     for i in _buttons.size():
         _buttons[i].pressed.connect(_on_button_pressed.bind(i))
 
-func show_shop() -> void:
+func show_shop(current_gold: int) -> void:
+    _current_gold = current_gold
     get_tree().paused = true
     visible = true
     _generate_options()
@@ -35,12 +38,16 @@ func _generate_options() -> void:
         _options.append(types[i])
 
 func _update_button_text() -> void:
+    var price = balance.unit_price
     for i in _buttons.size():
         var label := _type_to_label(_options[i])
-        _buttons[i].text = "Add %s" % label
+        _buttons[i].text = "Add %s\n(%d G)" % [label, price]
+        _buttons[i].disabled = (_current_gold < price)
 
 func _on_button_pressed(index: int) -> void:
     if index < 0 or index >= _options.size():
+        return
+    if _current_gold < balance.unit_price:
         return
     emit_signal("upgrade_selected", _options[index])
     visible = false

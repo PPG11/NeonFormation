@@ -11,6 +11,7 @@ enum EnemyType { DASHER, SHOOTER, BASIC }
 var current_hp: int
 var _base_modulate: Color
 var _did_emit: bool = false
+var _hp_bar: TextureProgressBar
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
@@ -18,12 +19,19 @@ const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 var _shoot_timer: Timer
 
 func _ready() -> void:
+    # Ensure max_hp is set correctly if not set by Main (fallback)
+    if current_hp == 0:
+        max_hp = balance.enemy_base_hp
+        current_hp = max_hp
+
     speed = balance.enemy_base_speed
-    max_hp = balance.enemy_base_hp
     add_to_group("enemy")
     add_to_group("enemy_team")
     monitoring = true
-    current_hp = max_hp
+    current_hp = max_hp # Reset to max_hp just in case
+
+    _setup_hp_bar()
+
     _base_modulate = modulate
     _shoot_timer = Timer.new()
     _shoot_timer.wait_time = balance.shooter_fire_interval
@@ -39,6 +47,34 @@ func _ready() -> void:
     notifier.screen_exited.connect(_on_screen_exited)
     body_entered.connect(_on_body_entered)
     area_entered.connect(_on_area_entered)
+
+func _setup_hp_bar() -> void:
+    _hp_bar = TextureProgressBar.new()
+
+    var tex_under = GradientTexture2D.new()
+    tex_under.width = 24
+    tex_under.height = 4
+    tex_under.fill_from = Vector2(0, 0)
+    tex_under.fill_to = Vector2(0, 1)
+    var grad_under = Gradient.new()
+    grad_under.add_point(0.0, Color(0.2, 0.2, 0.2))
+    tex_under.gradient = grad_under
+
+    var tex_prog = GradientTexture2D.new()
+    tex_prog.width = 24
+    tex_prog.height = 4
+    tex_prog.fill_from = Vector2(0, 0)
+    tex_prog.fill_to = Vector2(0, 1)
+    var grad_prog = Gradient.new()
+    grad_prog.add_point(0.0, Color.RED)
+    tex_prog.gradient = grad_prog
+
+    _hp_bar.texture_under = tex_under
+    _hp_bar.texture_progress = tex_prog
+    _hp_bar.position = Vector2(-12, -24)
+    _hp_bar.max_value = max_hp
+    _hp_bar.value = current_hp
+    add_child(_hp_bar)
 
 func _process(delta: float) -> void:
     var player := get_tree().get_first_node_in_group("player_team") as Node2D
@@ -89,12 +125,17 @@ func _on_body_entered(body: Node) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
     if area != null and area.get_script() == SnakeBodyScript:
-        area.queue_free()
+        if area.has_method("take_damage"):
+            area.take_damage(10)
+        else:
+            area.queue_free()
         _emit_enemy_died(0, global_position)
         queue_free()
 
 func take_damage(amount: int) -> void:
     current_hp -= amount
+    if _hp_bar:
+        _hp_bar.value = current_hp
     modulate = Color.RED
     var tween := create_tween()
     tween.tween_property(self, "modulate", _base_modulate, 0.1)
