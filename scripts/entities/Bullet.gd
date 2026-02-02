@@ -18,6 +18,7 @@ func _ready() -> void:
     area_entered.connect(_on_area_entered)
     body_entered.connect(_on_body_entered)
     _bounces_left = max_bounces
+    add_to_group("bullets")
 
 func _process(delta: float) -> void:
     var dir := Vector2.UP.rotated(rotation)

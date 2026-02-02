@@ -27,10 +27,20 @@ func _ready() -> void:
 func show_shop(current_gold: int) -> void:
     _current_gold = current_gold
     _purchased = [false, false, false]
+    
+    # 清除所有子弹，避免误触
+    _clear_all_bullets()
+    
     get_tree().paused = true
     visible = true
     _generate_options()
     _update_ui()
+
+func _clear_all_bullets() -> void:
+    var bullets := get_tree().get_nodes_in_group("bullets")
+    for bullet in bullets:
+        if is_instance_valid(bullet):
+            bullet.queue_free()
 
 func _generate_options() -> void:
     var types := [
