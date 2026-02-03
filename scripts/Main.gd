@@ -46,6 +46,8 @@ func _ready() -> void:
             add_child(_shop_ui)
             if _shop_ui.has_signal("upgrade_selected"):
                 _shop_ui.connect("upgrade_selected", _on_upgrade_selected)
+            if _shop_ui.has_signal("shop_closed"):
+                _shop_ui.connect("shop_closed", next_wave)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
@@ -101,6 +103,12 @@ func _on_spawn_timeout() -> void:
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
 
+    var damage_val = (balance.enemy_base_damage + (current_wave * balance.enemy_damage_per_wave)) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("damage", int(damage_val))
+
+    var bullet_damage_val = (balance.enemy_bullet_damage + (current_wave * balance.enemy_damage_per_wave)) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("bullet_damage", int(bullet_damage_val))
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -130,6 +138,10 @@ func _spawn_boss_wave() -> void:
     var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
     boss.max_hp = hp
     boss.current_hp = hp
+
+    var boss_damage = (20 + (current_wave * 2)) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    boss.damage = int(boss_damage)
+
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
@@ -166,7 +178,8 @@ func _on_upgrade_selected(unit_type: int) -> void:
         _update_ui()
         if _player != null and _player.has_method("add_body"):
             _player.call("add_body", unit_type)
-    next_wave()
+        if _shop_ui != null and _shop_ui.has_method("update_gold"):
+            _shop_ui.call("update_gold", gold)
 
 func apply_shake(strength: float) -> void:
     shake_strength = max(shake_strength, strength)
