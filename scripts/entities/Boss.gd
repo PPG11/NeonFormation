@@ -14,8 +14,8 @@ var _state_timer: Timer
 var _shoot_timer: Timer
 var _strafe_dir: int = 1
 var target_y: float = 100.0
-var strafe_speed: float = 150.0
-var dash_speed: float = 600.0
+var strafe_speed: float = 200.0
+var dash_speed: float = 800.0
 var current_state: State = State.ENTERING
 var _did_emit: bool = false
 var _base_modulate: Color

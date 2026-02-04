@@ -42,6 +42,7 @@ func _update_button_text() -> void:
     for i in _buttons.size():
         var label := _type_to_label(_options[i])
         _buttons[i].text = "Add %s\n(%d G)" % [label, price]
+        # Ensure button is disabled if not enough gold
         _buttons[i].disabled = (_current_gold < price)
 
 func _on_button_pressed(index: int) -> void:

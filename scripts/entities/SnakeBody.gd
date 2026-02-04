@@ -15,6 +15,8 @@ var _shoot_timer: Timer
 var _attack_speed: float = 1.0
 var _damage_mult: float = 1.0
 var _size_mult: float = 1.0
+var _crit_chance: float = 0.0
+var _crit_mult: float = 1.0
 var max_hp: int = 10
 var current_hp: int = 10
 var _hp_bar: TextureProgressBar
@@ -112,12 +114,22 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
-    bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+
+    var final_damage = int(damage * _damage_mult)
+    var final_color = bullet_color
+    var final_scale = scale_factor * _size_mult
+
+    if randf() < _crit_chance:
+        final_damage = int(final_damage * _crit_mult)
+        final_color = Color(1.0, 1.0, 1.0) # White for crit
+        final_scale *= 1.5
+
+    bullet.set("color", final_color)
+    bullet.set("damage", final_damage)
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
-    bullet.scale = Vector2.ONE * scale_factor * _size_mult
+    bullet.scale = Vector2.ONE * final_scale
     get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:
@@ -161,6 +173,13 @@ func update_stats(bonuses: Dictionary) -> void:
     _attack_speed = float(bonuses.get("attack_speed", 1.0))
     _damage_mult = float(bonuses.get("damage_mult", 1.0))
     _size_mult = float(bonuses.get("size_mult", 1.0))
+
+    if unit_type == ClassType.STRIKER:
+        _crit_chance = balance.striker_crit_chance
+        _crit_mult = balance.striker_crit_mult
+    else:
+        _crit_chance = 0.0
+        _crit_mult = 1.0
 
     var level_mult = pow(2.0, level - 1)
     _damage_mult *= level_mult

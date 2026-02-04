@@ -95,7 +95,7 @@ func _on_spawn_timeout() -> void:
     if enemy.has_signal("enemy_died"):
         enemy.connect("enemy_died", _on_enemy_killed)
 
-    var hp_val = (balance.enemy_base_hp + (current_wave * balance.enemy_hp_per_wave)) * pow(balance.enemy_hp_exponent, max(0, current_wave - 1))
+    var hp_val = balance.enemy_base_hp * pow(balance.enemy_hp_exponent, current_wave)
     enemy.set("max_hp", int(hp_val))
 
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))

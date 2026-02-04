@@ -19,16 +19,11 @@ const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 var _shoot_timer: Timer
 
 func _ready() -> void:
-    # Ensure max_hp is set correctly if not set by Main (fallback)
-    if current_hp == 0:
-        max_hp = balance.enemy_base_hp
-        current_hp = max_hp
-
     speed = balance.enemy_base_speed
     add_to_group("enemy")
     add_to_group("enemy_team")
     monitoring = true
-    current_hp = max_hp # Reset to max_hp just in case
+    current_hp = max_hp
 
     _setup_hp_bar()
 
@@ -72,6 +67,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.texture_under = tex_under
     _hp_bar.texture_progress = tex_prog
     _hp_bar.position = Vector2(-12, -24)
+    _hp_bar.scale = Vector2(0.7, 0.7)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
     add_child(_hp_bar)
