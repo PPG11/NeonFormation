@@ -100,7 +100,11 @@ func _on_shoot_timer_timeout() -> void:
         return
     match unit_type:
         ClassType.STRIKER:
-            _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
+            var is_crit = randf() < balance.striker_crit_chance
+            var dmg = balance.striker_damage
+            if is_crit:
+                dmg = int(dmg * balance.striker_crit_mult)
+            _spawn_bullet(Color.CYAN, dmg, 1.0, 0.0, is_crit)
         ClassType.HEAVY:
             _spawn_bullet(Color.YELLOW, balance.heavy_damage, balance.heavy_scale, 0.0)
         ClassType.SPREAD:
@@ -108,13 +112,14 @@ func _on_shoot_timer_timeout() -> void:
             _spawn_bullet(Color.PURPLE, balance.spread_damage, 1.0, 0.0)
             _spawn_bullet(Color.PURPLE, balance.spread_damage, 1.0, 15.0)
 
-func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_deg: float) -> void:
+func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_deg: float, is_crit: bool = false) -> void:
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
     bullet.set("color", bullet_color)
     bullet.set("damage", int(damage * _damage_mult))
     bullet.set("is_enemy_bullet", false)
+    bullet.set("is_crit", is_crit)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
     bullet.scale = Vector2.ONE * scale_factor * _size_mult
