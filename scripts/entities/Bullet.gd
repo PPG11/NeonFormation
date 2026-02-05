@@ -4,6 +4,7 @@ extends Area2D
 @export var color: Color = Color.WHITE
 @export var damage: int = 10
 @export var is_enemy_bullet: bool = false
+@export var is_crit: bool = false
 
 func _ready() -> void:
     monitoring = true
@@ -16,9 +17,13 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
     var draw_color := color
+    var radius := 3.0
     if is_enemy_bullet:
         draw_color = Color.ORANGE
-    draw_circle(Vector2.ZERO, 3.0, draw_color)
+    elif is_crit:
+        draw_color = Color.WHITE
+        radius = 5.0
+    draw_circle(Vector2.ZERO, radius, draw_color)
 
 func _on_area_entered(area: Area2D) -> void:
     if is_enemy_bullet:
