@@ -16,6 +16,8 @@ extends Node
 @export var heavy_scale: float = 2.0
 @export var spread_damage: int = 12
 @export var spread_interval: float = 0.5
+@export var striker_crit_chance: float = 0.2
+@export var striker_crit_multiplier: float = 2.0
 
 # Synergy buff
 @export var synergy_striker_threshold: int = 2
@@ -39,12 +41,16 @@ extends Node
 @export var enemy_speed_per_wave: float = 5.0
 @export var enemy_speed_exponent: float = 1.02
 @export var enemy_bullet_damage: int = 15
+@export var enemy_damage_per_wave: int = 2
+@export var enemy_damage_exponent: float = 1.1
 @export var shooter_fire_interval: float = 1.2
 
 # ==================== Boss ====================
 @export_group("Boss")
 @export var boss_base_hp: int = 2000
 @export var boss_hp_per_wave: int = 500
+@export var boss_base_damage: int = 20
+@export var boss_damage_per_wave: int = 5
 
 # ==================== Wave ====================
 @export_group("Wave")

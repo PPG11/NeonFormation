@@ -68,6 +68,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-12, -20)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    _hp_bar.visible = true
     add_child(_hp_bar)
 
 func _physics_process(delta: float) -> void:
@@ -112,8 +113,17 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
-    bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+
+    var final_damage = damage * _damage_mult
+    var final_color = bullet_color
+
+    if unit_type == ClassType.STRIKER:
+        if randf() < balance.striker_crit_chance:
+            final_damage *= balance.striker_crit_multiplier
+            final_color = Color(0.8, 1.0, 1.0) # Bright cyan/white
+
+    bullet.set("color", final_color)
+    bullet.set("damage", int(final_damage))
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
