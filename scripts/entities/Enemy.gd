@@ -8,6 +8,7 @@ enum EnemyType { DASHER, SHOOTER, BASIC }
 @export var max_hp: int = 60
 @export var enemy_type: EnemyType = EnemyType.BASIC : set = _set_enemy_type
 
+var damage: int = 10
 var current_hp: int
 var _base_modulate: Color
 var _did_emit: bool = false
@@ -74,6 +75,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-12, -24)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    _hp_bar.visible = false
     add_child(_hp_bar)
 
 func _process(delta: float) -> void:
@@ -118,15 +120,18 @@ func _on_screen_exited() -> void:
     queue_free()
 
 func _on_body_entered(body: Node) -> void:
-    if body is CharacterBody2D and body.has_method("die"):
-        body.call("die")
+    if body is CharacterBody2D:
+        if body.has_method("take_damage"):
+            body.call("take_damage", damage)
+        elif body.has_method("die"):
+            body.call("die")
         _emit_enemy_died(0, global_position)
         queue_free()
 
 func _on_area_entered(area: Area2D) -> void:
     if area != null and area.get_script() == SnakeBodyScript:
         if area.has_method("take_damage"):
-            area.take_damage(10)
+            area.take_damage(damage)
         else:
             area.queue_free()
         _emit_enemy_died(0, global_position)
@@ -136,6 +141,7 @@ func take_damage(amount: int) -> void:
     current_hp -= amount
     if _hp_bar:
         _hp_bar.value = current_hp
+        _hp_bar.visible = true
     modulate = Color.RED
     var tween := create_tween()
     tween.tween_property(self, "modulate", _base_modulate, 0.1)
@@ -167,7 +173,7 @@ func _on_shoot_timer_timeout() -> void:
         dir = Vector2.DOWN
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
-    bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("damage", damage)
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)

@@ -46,6 +46,8 @@ func _ready() -> void:
             add_child(_shop_ui)
             if _shop_ui.has_signal("upgrade_selected"):
                 _shop_ui.connect("upgrade_selected", _on_upgrade_selected)
+            if _shop_ui.has_signal("start_next_wave"):
+                _shop_ui.connect("start_next_wave", next_wave)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
@@ -101,6 +103,9 @@ func _on_spawn_timeout() -> void:
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
 
+    var damage_val = (balance.enemy_bullet_damage + (current_wave * balance.enemy_damage_per_wave)) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("damage", int(damage_val))
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -127,9 +132,15 @@ func start_wave() -> void:
 func _spawn_boss_wave() -> void:
     if BossScene == null: return
     var boss = BossScene.instantiate()
-    var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
-    boss.max_hp = hp
-    boss.current_hp = hp
+
+    var wave_factor = max(0, (current_wave / 5) - 1)
+
+    var hp = (balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)) * pow(balance.enemy_hp_exponent, wave_factor)
+    var dmg = (balance.boss_base_damage + ((current_wave / 5) * balance.boss_damage_per_wave)) * pow(balance.enemy_damage_exponent, wave_factor)
+
+    boss.max_hp = int(hp)
+    boss.current_hp = int(hp)
+    boss.set("damage", int(dmg))
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
@@ -166,7 +177,6 @@ func _on_upgrade_selected(unit_type: int) -> void:
         _update_ui()
         if _player != null and _player.has_method("add_body"):
             _player.call("add_body", unit_type)
-    next_wave()
 
 func apply_shake(strength: float) -> void:
     shake_strength = max(shake_strength, strength)

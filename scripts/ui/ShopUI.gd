@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 signal upgrade_selected(upgrade_type: int)
+signal start_next_wave()
 
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
@@ -13,11 +14,17 @@ const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 
 var _options: Array[int] = []
 var _current_gold: int = 0
+var _next_wave_btn: Button
 
 func _ready() -> void:
     visible = false
     for i in _buttons.size():
         _buttons[i].pressed.connect(_on_button_pressed.bind(i))
+
+    _next_wave_btn = Button.new()
+    _next_wave_btn.text = "Next Wave"
+    _next_wave_btn.pressed.connect(_on_next_wave_pressed)
+    $Control/HBoxContainer.add_child(_next_wave_btn)
 
 func show_shop(current_gold: int) -> void:
     _current_gold = current_gold
@@ -49,7 +56,13 @@ func _on_button_pressed(index: int) -> void:
         return
     if _current_gold < balance.unit_price:
         return
+
+    _current_gold -= balance.unit_price
+    _update_button_text()
     emit_signal("upgrade_selected", _options[index])
+
+func _on_next_wave_pressed() -> void:
+    emit_signal("start_next_wave")
     visible = false
     get_tree().paused = false
 
