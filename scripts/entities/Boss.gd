@@ -5,6 +5,7 @@ signal boss_died(pos: Vector2)
 enum State { ENTERING, HOVER_STRAFE, ATTACK_SPREAD, ATTACK_RAPID, DASH }
 
 @export var max_hp: int = 2000
+@export var bullet_damage: int = 20
 var current_hp: int
 
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
@@ -133,7 +134,7 @@ func _spawn_bullet(angle_deg: float) -> void:
     bullet.rotation_degrees = angle_deg
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.RED)
-    bullet.set("damage", 20)
+    bullet.set("damage", bullet_damage)
     get_tree().current_scene.add_child(bullet)
 
 func take_damage(amount: int) -> void:
