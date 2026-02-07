@@ -6,6 +6,7 @@ enum EnemyType { DASHER, SHOOTER, BASIC }
 
 @export var speed: float = 100.0
 @export var max_hp: int = 60
+@export var bullet_damage: int = 0
 @export var enemy_type: EnemyType = EnemyType.BASIC : set = _set_enemy_type
 
 var current_hp: int
@@ -23,6 +24,9 @@ func _ready() -> void:
     if current_hp == 0:
         max_hp = balance.enemy_base_hp
         current_hp = max_hp
+
+    if bullet_damage == 0:
+        bullet_damage = balance.enemy_bullet_damage
 
     speed = balance.enemy_base_speed
     add_to_group("enemy")
@@ -74,6 +78,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-12, -24)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    _hp_bar.visible = false
     add_child(_hp_bar)
 
 func _process(delta: float) -> void:
@@ -135,6 +140,7 @@ func _on_area_entered(area: Area2D) -> void:
 func take_damage(amount: int) -> void:
     current_hp -= amount
     if _hp_bar:
+        _hp_bar.visible = true
         _hp_bar.value = current_hp
     modulate = Color.RED
     var tween := create_tween()
@@ -167,7 +173,7 @@ func _on_shoot_timer_timeout() -> void:
         dir = Vector2.DOWN
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
-    bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("damage", bullet_damage)
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)

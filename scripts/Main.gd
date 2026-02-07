@@ -46,11 +46,13 @@ func _ready() -> void:
             add_child(_shop_ui)
             if _shop_ui.has_signal("upgrade_selected"):
                 _shop_ui.connect("upgrade_selected", _on_upgrade_selected)
+            if _shop_ui.has_signal("start_next_wave"):
+                _shop_ui.connect("start_next_wave", next_wave)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
     _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
+    _boss_hp_bar.position = Vector2(60, 40)
     _boss_hp_bar.modulate = Color.RED
     $CanvasLayer.add_child(_boss_hp_bar)
 
@@ -101,6 +103,9 @@ func _on_spawn_timeout() -> void:
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
 
+    var dmg_val = balance.enemy_bullet_damage * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("bullet_damage", int(dmg_val))
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -127,15 +132,19 @@ func start_wave() -> void:
 func _spawn_boss_wave() -> void:
     if BossScene == null: return
     var boss = BossScene.instantiate()
-    var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
-    boss.max_hp = hp
-    boss.current_hp = hp
+    var boss_level = current_wave / 5
+    var hp = (balance.boss_base_hp + (boss_level * balance.boss_hp_per_wave)) * pow(balance.boss_hp_exponent, max(0, boss_level - 1))
+    var dmg = 20.0 * pow(balance.boss_damage_exponent, max(0, boss_level - 1))
+
+    boss.max_hp = int(hp)
+    boss.current_hp = int(hp)
+    boss.bullet_damage = int(dmg)
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
 
-    _boss_hp_bar.max_value = hp
-    _boss_hp_bar.value = hp
+    _boss_hp_bar.max_value = int(hp)
+    _boss_hp_bar.value = int(hp)
     _boss_hp_bar.visible = true
 
     enemies_to_spawn = 0
@@ -166,7 +175,8 @@ func _on_upgrade_selected(unit_type: int) -> void:
         _update_ui()
         if _player != null and _player.has_method("add_body"):
             _player.call("add_body", unit_type)
-    next_wave()
+        if _shop_ui != null and _shop_ui.has_method("update_gold"):
+            _shop_ui.call("update_gold", gold)
 
 func apply_shake(strength: float) -> void:
     shake_strength = max(shake_strength, strength)
