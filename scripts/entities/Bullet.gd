@@ -12,6 +12,7 @@ extends Area2D
 @export var damage_decay: float = 1.0
 var _bounces_left: int = 0
 var _hit_targets: Array[Node2D] = []
+var sprite_texture: Texture2D
 
 func _ready() -> void:
     monitoring = true
@@ -20,11 +21,19 @@ func _ready() -> void:
     _bounces_left = max_bounces
     add_to_group("bullets")
 
+    if sprite_texture:
+        var sprite = Sprite2D.new()
+        sprite.texture = sprite_texture
+        sprite.scale = Vector2(0.05, 0.05) # Approx 12px
+        add_child(sprite)
+
 func _process(delta: float) -> void:
     var dir := Vector2.UP.rotated(rotation)
     global_position += dir * speed * delta
 
 func _draw() -> void:
+    if sprite_texture:
+        return
     var draw_color := color
     if is_enemy_bullet:
         draw_color = Color.ORANGE

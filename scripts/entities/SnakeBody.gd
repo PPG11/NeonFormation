@@ -11,6 +11,26 @@ enum ClassType { STRIKER, HEAVY, SPREAD, BURST, LASER, RICOCHET, CHARGE, SHIELD,
 
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 
+var tex_striker = preload("res://assets/sprites/wingman_striker.png")
+var tex_heavy = preload("res://assets/sprites/wingman_heavy.png")
+var tex_spread = preload("res://assets/sprites/wingman_spread.png")
+var tex_burst = preload("res://assets/sprites/wingman_burst.png")
+var tex_laser = preload("res://assets/sprites/wingman_laser.png")
+var tex_ricochet = preload("res://assets/sprites/wingman_ricochet.png")
+var tex_charge = preload("res://assets/sprites/wingman_charge.png")
+var tex_shield = preload("res://assets/sprites/wingman_shield.png")
+var tex_support = preload("res://assets/sprites/wingman_support.png")
+
+var tex_bullet_striker = preload("res://assets/sprites/bullet_striker.png")
+var tex_bullet_heavy = preload("res://assets/sprites/bullet_heavy.png")
+var tex_bullet_spread = preload("res://assets/sprites/bullet_spread.png")
+var tex_bullet_burst = preload("res://assets/sprites/bullet_burst.png")
+var tex_bullet_ricochet = preload("res://assets/sprites/bullet_ricochet.png")
+var tex_bullet_charge = preload("res://assets/sprites/bullet_charge.png")
+var tex_bullet_shield = preload("res://assets/sprites/bullet_shield.png")
+
+var sprite: Sprite2D
+
 var _shoot_timer: Timer
 var _attack_speed: float = 1.0
 var _damage_mult: float = 1.0
@@ -65,6 +85,11 @@ func _ready() -> void:
     keep_distance = balance.snake_keep_distance
     add_to_group("player_team")
     area_entered.connect(_on_area_entered)
+
+    sprite = Sprite2D.new()
+    add_child(sprite)
+    move_child(sprite, 0)
+    _update_sprite()
 
     max_hp = 10 * level
     current_hp = max_hp
@@ -191,39 +216,8 @@ func _draw() -> void:
         draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 24, border_color, 1.5)
 
     match unit_type:
-        ClassType.STRIKER:
-            draw_arc(Vector2.ZERO, 8.0, 0.0, TAU, 24, Color.CYAN, 2.0)
-        ClassType.HEAVY:
-            var half := 8.0
-            var rect := Rect2(Vector2(-half, -half), Vector2(half * 2.0, half * 2.0))
-            draw_rect(rect, Color.YELLOW, false, 2.0)
-        ClassType.SPREAD:
-            var p1 := Vector2(0.0, -10.0)
-            var p2 := Vector2(-9.0, 8.0)
-            var p3 := Vector2(9.0, 8.0)
-            var points: PackedVector2Array = [p1, p2, p3, p1]
-            draw_polyline(points, Color.PURPLE, 2.0)
-        ClassType.BURST:
-            # Triple-star shape
-            draw_arc(Vector2(-6.0, -3.0), 3.0, 0.0, TAU, 12, Color.ORANGE, 2.0)
-            draw_arc(Vector2(6.0, -3.0), 3.0, 0.0, TAU, 12, Color.ORANGE, 2.0)
-            draw_arc(Vector2(0.0, 6.0), 3.0, 0.0, TAU, 12, Color.ORANGE, 2.0)
-        ClassType.LASER:
-            # Crossed dual lines
-            draw_line(Vector2(-8.0, -8.0), Vector2(8.0, 8.0), Color.RED, 2.0)
-            draw_line(Vector2(8.0, -8.0), Vector2(-8.0, 8.0), Color.RED, 2.0)
-        ClassType.RICOCHET:
-            # Diamond shape
-            var p1 := Vector2(0.0, -10.0)
-            var p2 := Vector2(-7.0, 0.0)
-            var p3 := Vector2(0.0, 10.0)
-            var p4 := Vector2(7.0, 0.0)
-            var points: PackedVector2Array = [p1, p2, p3, p4, p1]
-            draw_polyline(points, Color(0.75, 0.75, 0.75), 2.0)  # Silver
         ClassType.CHARGE:
-            # Circle with lightning center
-            draw_arc(Vector2.ZERO, 8.0, 0.0, TAU, 24, Color(0.5, 0.9, 1.0), 2.0)  # Cyan-white
-            # Lightning bolt indicator
+            # Lightning bolt indicator (on top of sprite)
             var charge_progress := float(_charge_counter) / float(_charge_shots_needed)
             if charge_progress > 0.0:
                 var bolt_color := Color(1.0, 1.0, 0.0, 0.5 + charge_progress * 0.5)
@@ -231,31 +225,15 @@ func _draw() -> void:
                 draw_line(Vector2(-2, 0), Vector2(2, 2), bolt_color, 2.0)
                 draw_line(Vector2(2, 2), Vector2(0, 4), bolt_color, 2.0)
         ClassType.SHIELD:
-            # Hexagon shield with rotating aura
-            var hex_points: PackedVector2Array = []
-            for i in range(7):
-                var angle := (TAU / 6.0) * i
-                hex_points.append(Vector2(cos(angle), sin(angle)) * 8.0)
-            draw_polyline(hex_points, Color(0.3, 0.5, 1.0), 2.0)  # Blue
-
             # Rotating shield aura (3 arcs)
             for i in range(3):
                 var arc_angle := _shield_aura_angle + (TAU / 3.0) * i
                 var start := arc_angle
                 var end := arc_angle + PI / 3.0
                 draw_arc(Vector2.ZERO, 12.0, start, end, 8, Color(0.5, 0.7, 1.0, 0.6), 2.0)
-
-            # Inner glow
-            draw_circle(Vector2.ZERO, 4.0, Color(0.3, 0.5, 1.0, 0.3))
         ClassType.SUPPORT:
             # Star/cross shape with pulse effect
             var pulse := 0.5 + sin(_buff_pulse_time) * 0.5
-            var gold_color := Color(1.0, 0.84, 0.0, 0.8 + pulse * 0.2)
-
-            draw_line(Vector2(0, -10), Vector2(0, 10), gold_color, 3.0)  # Gold
-            draw_line(Vector2(-10, 0), Vector2(10, 0), gold_color, 3.0)
-            draw_line(Vector2(-7, -7), Vector2(7, 7), gold_color, 2.5)
-            draw_line(Vector2(7, -7), Vector2(-7, 7), gold_color, 2.5)
 
             # Stronger pulsing aura
             var aura_radius := 14.0 + pulse * 4.0
@@ -312,6 +290,7 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     bullet.set("color", bullet_color)
     bullet.set("damage", int(damage * _damage_mult))
     bullet.set("is_enemy_bullet", false)
+    bullet.set("sprite_texture", _get_bullet_texture())
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
     bullet.scale = Vector2.ONE * scale_factor * _size_mult
@@ -343,7 +322,54 @@ func _set_unit_type(value: ClassType) -> void:
     unit_type = value
     if _shoot_timer != null:
         _shoot_timer.wait_time = _get_shoot_interval() / _attack_speed
+    _update_sprite()
     queue_redraw()
+
+func _update_sprite() -> void:
+    if sprite == null:
+        return
+
+    match unit_type:
+        ClassType.STRIKER:
+            sprite.texture = tex_striker
+            sprite.scale = Vector2(0.06, 0.06)
+        ClassType.HEAVY:
+            sprite.texture = tex_heavy
+            sprite.scale = Vector2(0.08, 0.08)
+        ClassType.SPREAD:
+            sprite.texture = tex_spread
+            sprite.scale = Vector2(0.07, 0.07)
+        ClassType.BURST:
+            sprite.texture = tex_burst
+            sprite.scale = Vector2(0.06, 0.06)
+        ClassType.LASER:
+            sprite.texture = tex_laser
+            sprite.scale = Vector2(0.06, 0.06)
+        ClassType.RICOCHET:
+            sprite.texture = tex_ricochet
+            sprite.scale = Vector2(0.06, 0.06)
+        ClassType.CHARGE:
+            sprite.texture = tex_charge
+            sprite.scale = Vector2(0.07, 0.07)
+        ClassType.SHIELD:
+            sprite.texture = tex_shield
+            sprite.scale = Vector2(0.07, 0.07)
+        ClassType.SUPPORT:
+            sprite.texture = tex_support
+            sprite.scale = Vector2(0.07, 0.07)
+
+func _get_bullet_texture() -> Texture2D:
+    match unit_type:
+        ClassType.STRIKER: return tex_bullet_striker
+        ClassType.HEAVY: return tex_bullet_heavy
+        ClassType.SPREAD: return tex_bullet_spread
+        ClassType.BURST: return tex_bullet_burst
+        ClassType.LASER: return null
+        ClassType.RICOCHET: return tex_bullet_ricochet
+        ClassType.CHARGE: return tex_bullet_charge
+        ClassType.SHIELD: return tex_bullet_shield
+        ClassType.SUPPORT: return null
+    return tex_bullet_striker
 
 func _on_area_entered(area: Area2D) -> void:
     if area.is_in_group("enemy_team"):
@@ -506,6 +532,7 @@ func _handle_ricochet() -> void:
     bullet.set("color", Color(0.75, 0.75, 0.75))  # Silver
     bullet.set("damage", int(balance.ricochet_damage * _damage_mult))
     bullet.set("is_enemy_bullet", false)
+    bullet.set("sprite_texture", tex_bullet_ricochet)
     bullet.set("can_ricochet", true)
     bullet.set("max_bounces", _ricochet_max_bounces)
     bullet.set("bounce_range", _ricochet_range)

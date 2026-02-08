@@ -25,6 +25,9 @@ var _hp_bar: TextureProgressBar
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 
+var ship_texture: Texture2D = preload("res://assets/sprites/player_ship.png")
+var bullet_texture: Texture2D = preload("res://assets/sprites/bullet_friendly.png")
+
 func _ready() -> void:
     shoot_interval = balance.player_shoot_interval
     max_hp = balance.player_max_hp
@@ -38,6 +41,12 @@ func _ready() -> void:
     _shoot_timer.timeout.connect(_on_shoot_timeout)
 
     _setup_hp_bar()
+
+    var sprite = Sprite2D.new()
+    sprite.texture = ship_texture
+    sprite.scale = Vector2(0.125, 0.125)
+    add_child(sprite)
+    move_child(sprite, 0) # Ensure it's behind HP bar
 
     call_deferred("_spawn_initial_bodies")
 
@@ -95,12 +104,6 @@ func _draw() -> void:
         var border_color := Color(0.5, 0.8, 1.0, 0.6 * _shield_visual_alpha)
         draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, border_color, 2.0)
 
-    var p1 := Vector2(0.0, -16.0)
-    var p2 := Vector2(-8.0, 10.0)
-    var p3 := Vector2(8.0, 10.0)
-    var points: PackedVector2Array = [p1, p2, p3, p1]
-    draw_polyline(points, Color.GREEN, 2.0)
-
 func die() -> void:
     call_deferred("_deferred_die")
 
@@ -157,6 +160,7 @@ func _on_shoot_timeout() -> void:
     bullet.set("color", Color.GREEN)
     bullet.set("damage", balance.player_main_damage)
     bullet.set("is_enemy_bullet", false)
+    bullet.set("sprite_texture", bullet_texture)
     bullet.global_position = global_position
     get_tree().current_scene.add_child(bullet)
 

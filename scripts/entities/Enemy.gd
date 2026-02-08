@@ -16,6 +16,12 @@ var _hp_bar: TextureProgressBar
 const SnakeBodyScript: Script = preload("res://scripts/entities/SnakeBody.gd")
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 
+var tex_basic = preload("res://assets/sprites/enemy_basic.png")
+var tex_dasher = preload("res://assets/sprites/enemy_dasher.png")
+var tex_shooter = preload("res://assets/sprites/enemy_shooter.png")
+var tex_bullet = preload("res://assets/sprites/bullet_enemy.png")
+var sprite: Sprite2D
+
 var _shoot_timer: Timer
 
 func _ready() -> void:
@@ -29,6 +35,10 @@ func _ready() -> void:
     add_to_group("enemy_team")
     monitoring = true
     current_hp = max_hp # Reset to max_hp just in case
+
+    sprite = Sprite2D.new()
+    add_child(sprite)
+    move_child(sprite, 0)
 
     _setup_hp_bar()
 
@@ -94,24 +104,7 @@ func _process(delta: float) -> void:
                 global_position += Vector2.DOWN * slow_speed * delta
 
 func _draw() -> void:
-    match enemy_type:
-        EnemyType.BASIC:
-            var half := 10.0
-            var rect := Rect2(Vector2(-half, -half), Vector2(half * 2.0, half * 2.0))
-            draw_rect(rect, Color.RED, false, 2.0)
-        EnemyType.DASHER:
-            var p1 := Vector2(0.0, 12.0)
-            var p2 := Vector2(-10.0, -8.0)
-            var p3 := Vector2(10.0, -8.0)
-            var points: PackedVector2Array = [p1, p2, p3, p1]
-            draw_polyline(points, Color.RED, 2.0)
-        EnemyType.SHOOTER:
-            var p1 := Vector2(0.0, -12.0)
-            var p2 := Vector2(10.0, 0.0)
-            var p3 := Vector2(0.0, 12.0)
-            var p4 := Vector2(-10.0, 0.0)
-            var points: PackedVector2Array = [p1, p2, p3, p4, p1]
-            draw_polyline(points, Color.PURPLE, 2.0)
+    pass
 
 func _on_screen_exited() -> void:
     _emit_enemy_died(0, global_position)
@@ -169,6 +162,7 @@ func _on_shoot_timer_timeout() -> void:
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
     bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("sprite_texture", tex_bullet)
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)
@@ -179,6 +173,18 @@ func _set_enemy_type(value: EnemyType) -> void:
     queue_redraw()
 
 func _apply_enemy_type() -> void:
+    if sprite != null:
+        match enemy_type:
+            EnemyType.BASIC:
+                sprite.texture = tex_basic
+                sprite.scale = Vector2(0.08, 0.08)
+            EnemyType.DASHER:
+                sprite.texture = tex_dasher
+                sprite.scale = Vector2(0.08, 0.08)
+            EnemyType.SHOOTER:
+                sprite.texture = tex_shooter
+                sprite.scale = Vector2(0.1, 0.1)
+
     if _shoot_timer == null:
         return
     if enemy_type == EnemyType.SHOOTER:
