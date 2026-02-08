@@ -12,6 +12,10 @@ var current_hp: int
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 const EnemyScene: PackedScene = preload("res://scenes/entities/Enemy.tscn")
 
+var boss_tex = preload("res://assets/sprites/boss.png")
+var bullet_tex = preload("res://assets/sprites/bullet_enemy.png")
+var sprite: Sprite2D
+
 var _state_timer: Timer
 var _shoot_timer: Timer
 var _strafe_dir: int = 1
@@ -33,6 +37,12 @@ func _ready() -> void:
     add_to_group("enemy")
     add_to_group("enemy_team")
     monitoring = true
+
+    sprite = Sprite2D.new()
+    sprite.texture = boss_tex
+    sprite.scale = Vector2(0.3, 0.3)
+    add_child(sprite)
+    move_child(sprite, 0)
 
     _state_timer = Timer.new()
     _state_timer.one_shot = true
@@ -192,12 +202,15 @@ func _on_phase_change() -> void:
     match current_phase:
         Phase.PHASE_1:
             _aura_particles.color = Color.DARK_RED
+            if sprite: sprite.modulate = Color.WHITE
         Phase.PHASE_2:
             _aura_particles.color = Color.PURPLE
             _aura_particles.amount = 30
+            if sprite: sprite.modulate = Color(0.7, 0.0, 1.0)
         Phase.PHASE_3:
             _aura_particles.color = Color.ORANGE_RED
             _aura_particles.amount = 50
+            if sprite: sprite.modulate = Color(1.0, 0.3, 0.0)
     
     # 闪烁效果
     var tween = create_tween()
@@ -360,6 +373,7 @@ func _spawn_bullet(angle_deg: float, color: Color = Color.RED, damage_mult: floa
     bullet.rotation_degrees = angle_deg
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", color)
+    bullet.set("sprite_texture", bullet_tex)
     
     var base_damage = 20
     if current_phase == Phase.PHASE_2:
@@ -448,32 +462,4 @@ func die() -> void:
     queue_free()
 
 func _draw() -> void:
-    var size = 40.0
-    var rect = Rect2(-size, -size, size*2, size*2)
-    
-    # 根据阶段改变外观
-    var main_color = Color.DARK_RED
-    var border_color = Color.WHITE
-    
-    match current_phase:
-        Phase.PHASE_1:
-            main_color = Color.DARK_RED
-            border_color = Color.WHITE
-        Phase.PHASE_2:
-            main_color = Color.PURPLE
-            border_color = Color.LIGHT_PINK
-        Phase.PHASE_3:
-            main_color = Color.ORANGE_RED
-            border_color = Color.YELLOW
-    
-    draw_rect(rect, main_color, true)
-    draw_rect(rect, border_color, false, 4.0)
-    
-    # 绘制内部装饰
-    var inner_size = size * 0.5
-    var inner_rect = Rect2(-inner_size, -inner_size, inner_size*2, inner_size*2)
-    draw_rect(inner_rect, border_color, false, 2.0)
-    
-    # 绘制X形装饰
-    draw_line(Vector2(-size, -size), Vector2(size, size), border_color, 2.0)
-    draw_line(Vector2(size, -size), Vector2(-size, size), border_color, 2.0)
+    pass
