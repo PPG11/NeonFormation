@@ -51,9 +51,11 @@ func _ready() -> void:
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
+    # Make it large and top-center (assuming ~360 width)
+    _boss_hp_bar.size = Vector2(320, 30)
+    _boss_hp_bar.position = Vector2(20, 50)
     _boss_hp_bar.modulate = Color.RED
+    # Add a label for "BOSS" if possible, or just the bar
     $CanvasLayer.add_child(_boss_hp_bar)
 
     _spawn_timer = Timer.new()
@@ -163,9 +165,11 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
     gold -= cost
+    if gold < 0:
+        gold = 0
     _update_ui()
+
     if _player != null and _player.has_method("add_body"):
         _player.call("add_body", unit_type)
 
