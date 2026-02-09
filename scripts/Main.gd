@@ -79,7 +79,7 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
+        var bosses = get_tree().get_nodes_in_group("boss")
         if bosses.size() > 0:
             var b = bosses[0]
             if "current_hp" in b:
@@ -163,8 +163,10 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    print("Purchased unit type: ", unit_type, " Cost: ", cost)
     gold -= cost
+    if gold < 0:
+        gold = 0
     _update_ui()
     if _player != null and _player.has_method("add_body"):
         _player.call("add_body", unit_type)

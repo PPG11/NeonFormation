@@ -32,6 +32,7 @@ func _ready() -> void:
     _base_modulate = modulate
     add_to_group("enemy")
     add_to_group("enemy_team")
+    add_to_group("boss")
     monitoring = true
 
     _state_timer = Timer.new()
@@ -44,7 +45,7 @@ func _ready() -> void:
     add_child(_shoot_timer)
     _shoot_timer.timeout.connect(_on_shoot_timer_timeout)
 
-    _setup_hp_bar()
+    # _setup_hp_bar() # Removed local HP bar
     _setup_particles()
     _change_state(State.ENTERING)
 
@@ -56,35 +57,6 @@ func _ready() -> void:
         shape.shape = rect
         shape.name = "CollisionShape2D"
         add_child(shape)
-
-func _setup_hp_bar() -> void:
-    _hp_bar = TextureProgressBar.new()
-    
-    var tex_under = GradientTexture2D.new()
-    tex_under.width = 100
-    tex_under.height = 8
-    tex_under.fill_from = Vector2(0, 0)
-    tex_under.fill_to = Vector2(0, 1)
-    var grad_under = Gradient.new()
-    grad_under.add_point(0.0, Color(0.2, 0.2, 0.2))
-    tex_under.gradient = grad_under
-    
-    var tex_prog = GradientTexture2D.new()
-    tex_prog.width = 100
-    tex_prog.height = 8
-    tex_prog.fill_from = Vector2(0, 0)
-    tex_prog.fill_to = Vector2(0, 1)
-    var grad_prog = Gradient.new()
-    grad_prog.add_point(0.0, Color.DARK_RED)
-    grad_prog.add_point(1.0, Color.RED)
-    tex_prog.gradient = grad_prog
-    
-    _hp_bar.texture_under = tex_under
-    _hp_bar.texture_progress = tex_prog
-    _hp_bar.position = Vector2(-50, -60)
-    _hp_bar.max_value = max_hp
-    _hp_bar.value = current_hp
-    add_child(_hp_bar)
 
 func _setup_particles() -> void:
     # 光环粒子效果
@@ -372,8 +344,7 @@ func _spawn_bullet(angle_deg: float, color: Color = Color.RED, damage_mult: floa
 
 func take_damage(amount: int) -> void:
     current_hp -= amount
-    if _hp_bar:
-        _hp_bar.value = current_hp
+    # if _hp_bar: _hp_bar.value = current_hp # Removed
     
     modulate = Color.RED
     var tween := create_tween()

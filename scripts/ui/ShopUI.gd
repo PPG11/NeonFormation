@@ -79,11 +79,13 @@ func _on_button_pressed(index: int) -> void:
         return
     if _purchased[index]:
         return
-    if _current_gold < balance.unit_price:
+
+    var price = balance.unit_price
+
+    if _current_gold < price:
         return
     
     # 购买商品
-    var price = balance.unit_price
     _current_gold -= price
     _purchased[index] = true
     
