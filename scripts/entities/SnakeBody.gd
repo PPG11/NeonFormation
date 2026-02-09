@@ -131,7 +131,7 @@ func _setup_hp_bar() -> void:
 
     _hp_bar.texture_under = tex_under
     _hp_bar.texture_progress = tex_prog
-    _hp_bar.position = Vector2(-12, -20)
+    _hp_bar.position = Vector2(-12, -30)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
     add_child(_hp_bar)
@@ -285,7 +285,15 @@ func _on_shoot_timer_timeout() -> void:
         return
     match unit_type:
         ClassType.STRIKER:
-            _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
+            var dmg = balance.striker_damage
+            var s = 1.0
+            var col = Color.CYAN
+            # Critical Hit Logic (20% chance)
+            if randf() < 0.2:
+                dmg *= 2
+                s = 1.5
+                col = Color.RED
+            _spawn_bullet(col, dmg, s, 0.0)
         ClassType.HEAVY:
             _spawn_bullet(Color.YELLOW, balance.heavy_damage, balance.heavy_scale, 0.0)
         ClassType.SPREAD:

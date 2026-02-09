@@ -64,7 +64,7 @@ func _setup_hp_bar() -> void:
 
     _hp_bar.texture_under = tex_under
     _hp_bar.texture_progress = tex_prog
-    _hp_bar.position = Vector2(-16, -24)
+    _hp_bar.position = Vector2(-16, -32)
     add_child(_hp_bar)
     _update_floating_hp()
 
@@ -163,7 +163,7 @@ func _on_shoot_timeout() -> void:
 func add_body(unit_type: int) -> void:
     _add_body_internal(unit_type, 1)
 
-func _add_body_internal(unit_type: int, level: int) -> void:
+func _add_body_internal(unit_type: int, level: int, insert_index: int = -1) -> void:
     var matching_indices = []
     for i in range(body_parts.size()):
         var part = body_parts[i]
@@ -173,6 +173,11 @@ func _add_body_internal(unit_type: int, level: int) -> void:
                 break
 
     if matching_indices.size() == 2:
+        # Merge logic: Remove 2 existing + new one = 1 next level
+        var idx1 = matching_indices[0]
+        var idx2 = matching_indices[1]
+        var min_idx = min(idx1, idx2)
+
         matching_indices.sort()
         matching_indices.reverse()
         for idx in matching_indices:
@@ -181,7 +186,7 @@ func _add_body_internal(unit_type: int, level: int) -> void:
             part.queue_free()
 
         _refresh_body_targets()
-        _add_body_internal(unit_type, level + 1)
+        _add_body_internal(unit_type, level + 1, min_idx)
         return
 
     if body_scene == null:
@@ -189,17 +194,33 @@ func _add_body_internal(unit_type: int, level: int) -> void:
     var body := body_scene.instantiate() as Node2D
     if body == null:
         return
-    var target: Node2D = self if body_parts.is_empty() else body_parts.back()
+
     body.set("unit_type", unit_type)
     body.set("level", level)
-    body.set("target", target)
+
+    # Insert or append
+    if insert_index != -1 and insert_index <= body_parts.size():
+        body_parts.insert(insert_index, body)
+    else:
+        body_parts.append(body)
+
     get_tree().current_scene.add_child(body)
     body.tree_exited.connect(_on_body_exited.bind(body))
+
+    # Update targets for all bodies
+    _refresh_body_targets()
+
+    # Set initial position
+    var target = body.get("target")
     var offset := body.get("follow_offset") as Vector2
     if offset == null:
         offset = Vector2.ZERO
-    body.global_position = target.global_transform * offset
-    body_parts.append(body)
+
+    if is_instance_valid(target):
+        body.global_position = target.global_transform * offset
+    else:
+        body.global_position = global_position
+
     recalculate_synergies()
 
 func _on_body_exited(body: Node) -> void:
