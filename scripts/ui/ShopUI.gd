@@ -79,18 +79,20 @@ func _on_button_pressed(index: int) -> void:
         return
     if _purchased[index]:
         return
-    if _current_gold < balance.unit_price:
-        return
     
-    # 购买商品
     var price = balance.unit_price
+    if _current_gold < price:
+        return
+
+    # Purchase item
     _current_gold -= price
     _purchased[index] = true
+    print("Shop: Item purchased. New gold: ", _current_gold)
     
-    # 发射购买信号
+    # Emit signal with cost
     emit_signal("item_purchased", _options[index], price)
     
-    # 更新UI，但不关闭商店
+    # Update UI immediately
     _update_ui()
 
 func _on_leave_pressed() -> void:

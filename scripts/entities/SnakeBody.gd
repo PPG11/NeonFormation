@@ -309,8 +309,18 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
+
+    var final_damage: int = int(damage * _damage_mult)
+
+    # Critical hit logic for STRIKER
+    if unit_type == ClassType.STRIKER:
+        if randf() < 0.2: # 20% critical hit chance
+            final_damage *= 2
+            bullet_color = Color.WHITE # Visual feedback: bright white bullet
+            scale_factor *= 1.5 # Visual feedback: larger bullet
+
     bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+    bullet.set("damage", final_damage)
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)

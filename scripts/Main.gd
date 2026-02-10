@@ -19,6 +19,7 @@ var _spawn_timer: Timer
 var _player: Node2D
 var _shop_ui: CanvasLayer
 var _boss_hp_bar: ProgressBar
+var _current_boss: Node2D
 @onready var _camera: Camera2D = $Camera2D
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
@@ -51,8 +52,8 @@ func _ready() -> void:
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
+    _boss_hp_bar.size = Vector2(300, 30)
+    _boss_hp_bar.position = Vector2(30, 60) # Centered horizontally (360-300)/2 = 30
     _boss_hp_bar.modulate = Color.RED
     $CanvasLayer.add_child(_boss_hp_bar)
 
@@ -79,11 +80,11 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
-        if bosses.size() > 0:
-            var b = bosses[0]
-            if "current_hp" in b:
-                _boss_hp_bar.value = b.current_hp
+        if is_instance_valid(_current_boss) and "current_hp" in _current_boss:
+            _boss_hp_bar.value = _current_boss.current_hp
+        else:
+             # Hide bar if boss is invalid (dead)
+            _boss_hp_bar.visible = false
 
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
@@ -136,6 +137,8 @@ func _spawn_boss_wave() -> void:
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
 
+    _current_boss = boss
+
     _boss_hp_bar.max_value = hp
     _boss_hp_bar.value = hp
     _boss_hp_bar.visible = true
@@ -145,6 +148,7 @@ func _spawn_boss_wave() -> void:
 
 func _on_boss_killed(pos: Vector2) -> void:
     _boss_hp_bar.visible = false
+    _current_boss = null
     _on_enemy_killed(500, pos)
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
@@ -163,11 +167,16 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
-    gold -= cost
-    _update_ui()
-    if _player != null and _player.has_method("add_body"):
-        _player.call("add_body", unit_type)
+    # Ensure gold is deducted and UI updated
+    if gold >= cost:
+        gold -= cost
+        print("Main: Gold deducted. Remaining: ", gold)
+        _update_ui()
+        if _player != null and _player.has_method("add_body"):
+            _player.call("add_body", unit_type)
+    else:
+        # Should not happen if ShopUI checks correctly, but safe fallback
+        print("Main: Not enough gold to purchase item (cost: %d, gold: %d)" % [cost, gold])
 
 func _on_shop_closed() -> void:
     next_wave()
