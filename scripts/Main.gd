@@ -45,9 +45,9 @@ func _ready() -> void:
         if _shop_ui != null:
             add_child(_shop_ui)
             if _shop_ui.has_signal("item_purchased"):
-                _shop_ui.connect("item_purchased", _on_item_purchased)
+                _shop_ui.item_purchased.connect(_on_item_purchased)
             if _shop_ui.has_signal("shop_closed"):
-                _shop_ui.connect("shop_closed", _on_shop_closed)
+                _shop_ui.shop_closed.connect(_on_shop_closed)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
@@ -102,6 +102,9 @@ func _on_spawn_timeout() -> void:
 
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
+
+    var damage_val = balance.enemy_bullet_damage * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("damage", int(damage_val))
 
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()

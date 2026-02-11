@@ -88,7 +88,7 @@ func _on_button_pressed(index: int) -> void:
     _purchased[index] = true
     
     # 发射购买信号
-    emit_signal("item_purchased", _options[index], price)
+    item_purchased.emit(_options[index], price)
     
     # 更新UI，但不关闭商店
     _update_ui()
@@ -96,7 +96,7 @@ func _on_button_pressed(index: int) -> void:
 func _on_leave_pressed() -> void:
     visible = false
     get_tree().paused = false
-    emit_signal("shop_closed")
+    shop_closed.emit()
 
 func _type_to_label(t: int) -> String:
     match t:
