@@ -15,8 +15,8 @@ const EnemyScene: PackedScene = preload("res://scenes/entities/Enemy.tscn")
 var _state_timer: Timer
 var _shoot_timer: Timer
 var _strafe_dir: int = 1
-var target_y: float = 100.0
-var strafe_speed: float = 150.0
+var target_y: float = 120.0
+var strafe_speed: float = 180.0
 var dash_speed: float = 600.0
 var current_state: State = State.ENTERING
 var _did_emit: bool = false
@@ -84,6 +84,8 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-50, -60)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    # Use global HP bar instead
+    _hp_bar.visible = false
     add_child(_hp_bar)
 
 func _setup_particles() -> void:

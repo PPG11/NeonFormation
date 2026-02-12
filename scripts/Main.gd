@@ -51,9 +51,10 @@ func _ready() -> void:
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
-    _boss_hp_bar.modulate = Color.RED
+    _boss_hp_bar.size = Vector2(400, 30)
+    # Center the bar: (480 - 400) / 2 = 40
+    _boss_hp_bar.position = Vector2(40, 50)
+    _boss_hp_bar.modulate = Color.DARK_RED
     $CanvasLayer.add_child(_boss_hp_bar)
 
     _spawn_timer = Timer.new()
@@ -127,6 +128,7 @@ func start_wave() -> void:
     _spawn_timer.start()
 
 func _spawn_boss_wave() -> void:
+    print("Spawning Boss Wave!")
     if BossScene == null: return
     var boss = BossScene.instantiate()
     var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
@@ -164,6 +166,11 @@ func next_wave() -> void:
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
     # 商店已经扣除了金币，这里只需要同步并添加单位
+    if gold < cost:
+        print("Error: Insufficient gold for purchase! Needed:", cost, " Have:", gold)
+        return
+
+    print("Item purchased. Deducting gold: ", cost, " Current gold: ", gold)
     gold -= cost
     _update_ui()
     if _player != null and _player.has_method("add_body"):

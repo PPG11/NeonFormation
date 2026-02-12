@@ -309,12 +309,24 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
-    bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+
+    var final_damage = damage
+    var final_scale = scale_factor
+    var final_color = bullet_color
+
+    # Critical Hit Logic for Striker
+    if unit_type == ClassType.STRIKER:
+        if randf() < balance.striker_crit_chance:
+            final_damage = int(damage * balance.striker_crit_multiplier)
+            final_scale = scale_factor * 1.5
+            final_color = Color.WHITE
+
+    bullet.set("color", final_color)
+    bullet.set("damage", int(final_damage * _damage_mult))
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
-    bullet.scale = Vector2.ONE * scale_factor * _size_mult
+    bullet.scale = Vector2.ONE * final_scale * _size_mult
     get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:
@@ -392,9 +404,10 @@ func update_stats(bonuses: Dictionary) -> void:
     var level_mult = pow(2.0, level - 1)
     _damage_mult *= level_mult
 
-    scale = Vector2.ONE * (1.0 + (level - 1) * 0.3)
+    # Visual distinction for leveled units
+    scale = Vector2.ONE * (1.0 + (level - 1) * 0.4)
     if level > 1:
-        modulate = Color(1.5, 1.5, 1.5)
+        modulate = Color(1.2, 1.2, 1.2)
     else:
         modulate = Color.WHITE
 
