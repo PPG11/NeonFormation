@@ -84,6 +84,7 @@ func _on_button_pressed(index: int) -> void:
     
     # 购买商品
     var price = balance.unit_price
+    # _current_gold will be updated by Main via update_gold, but we deduct locally for immediate feedback
     _current_gold -= price
     _purchased[index] = true
     
@@ -91,6 +92,10 @@ func _on_button_pressed(index: int) -> void:
     emit_signal("item_purchased", _options[index], price)
     
     # 更新UI，但不关闭商店
+    _update_ui()
+
+func update_gold(amount: int) -> void:
+    _current_gold = amount
     _update_ui()
 
 func _on_leave_pressed() -> void:

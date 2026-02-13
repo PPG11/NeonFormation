@@ -285,7 +285,16 @@ func _on_shoot_timer_timeout() -> void:
         return
     match unit_type:
         ClassType.STRIKER:
-            _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
+            var damage = balance.striker_damage
+            var s_scale = 1.0
+            var color = Color.CYAN
+
+            if randf() < balance.striker_crit_chance:
+                damage = int(damage * balance.striker_crit_mult)
+                s_scale = 1.5
+                color = Color.WHITE
+
+            _spawn_bullet(color, damage, s_scale, 0.0)
         ClassType.HEAVY:
             _spawn_bullet(Color.YELLOW, balance.heavy_damage, balance.heavy_scale, 0.0)
         ClassType.SPREAD:
