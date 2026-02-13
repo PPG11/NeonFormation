@@ -11,6 +11,8 @@ extends Node
 @export var unit_price: int = 100
 @export var striker_damage: int = 8
 @export var striker_interval: float = 0.1
+@export var striker_crit_chance: float = 0.2
+@export var striker_crit_mult: float = 2.0
 @export var heavy_damage: int = 25
 @export var heavy_interval: float = 1.0
 @export var heavy_scale: float = 2.0
@@ -75,11 +77,12 @@ extends Node
 @export_group("Enemy")
 @export var enemy_base_hp: int = 60
 @export var enemy_hp_per_wave: int = 15
-@export var enemy_hp_exponent: float = 1.15
+@export var enemy_hp_exponent: float = 1.25
 @export var enemy_base_speed: float = 100.0
 @export var enemy_speed_per_wave: float = 5.0
 @export var enemy_speed_exponent: float = 1.02
 @export var enemy_bullet_damage: int = 10
+@export var enemy_damage_exponent: float = 1.1
 @export var shooter_fire_interval: float = 1.2
 
 # ==================== Boss ====================
