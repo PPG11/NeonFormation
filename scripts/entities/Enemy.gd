@@ -8,6 +8,7 @@ enum EnemyType { DASHER, SHOOTER, BASIC }
 @export var max_hp: int = 60
 @export var enemy_type: EnemyType = EnemyType.BASIC : set = _set_enemy_type
 
+var damage: int = 10
 var current_hp: int
 var _base_modulate: Color
 var _did_emit: bool = false
@@ -24,6 +25,10 @@ func _ready() -> void:
         max_hp = balance.enemy_base_hp
         current_hp = max_hp
 
+    # Initialize damage fallback
+    if damage <= 0:
+        damage = balance.enemy_bullet_damage
+
     speed = balance.enemy_base_speed
     add_to_group("enemy")
     add_to_group("enemy_team")
@@ -31,6 +36,7 @@ func _ready() -> void:
     current_hp = max_hp # Reset to max_hp just in case
 
     _setup_hp_bar()
+    _hp_bar.visible = false
 
     _base_modulate = modulate
     _shoot_timer = Timer.new()
@@ -136,6 +142,7 @@ func _on_area_entered(area: Area2D) -> void:
 func take_damage(amount: int) -> void:
     current_hp -= amount
     if _hp_bar:
+        _hp_bar.visible = true
         _hp_bar.value = current_hp
     modulate = Color.RED
     var tween := create_tween()
@@ -168,7 +175,7 @@ func _on_shoot_timer_timeout() -> void:
         dir = Vector2.DOWN
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
-    bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("damage", damage)
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)
