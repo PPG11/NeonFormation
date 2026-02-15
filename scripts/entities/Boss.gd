@@ -32,6 +32,7 @@ func _ready() -> void:
     _base_modulate = modulate
     add_to_group("enemy")
     add_to_group("enemy_team")
+    add_to_group("boss")
     monitoring = true
 
     _state_timer = Timer.new()
@@ -58,33 +59,8 @@ func _ready() -> void:
         add_child(shape)
 
 func _setup_hp_bar() -> void:
-    _hp_bar = TextureProgressBar.new()
-    
-    var tex_under = GradientTexture2D.new()
-    tex_under.width = 100
-    tex_under.height = 8
-    tex_under.fill_from = Vector2(0, 0)
-    tex_under.fill_to = Vector2(0, 1)
-    var grad_under = Gradient.new()
-    grad_under.add_point(0.0, Color(0.2, 0.2, 0.2))
-    tex_under.gradient = grad_under
-    
-    var tex_prog = GradientTexture2D.new()
-    tex_prog.width = 100
-    tex_prog.height = 8
-    tex_prog.fill_from = Vector2(0, 0)
-    tex_prog.fill_to = Vector2(0, 1)
-    var grad_prog = Gradient.new()
-    grad_prog.add_point(0.0, Color.DARK_RED)
-    grad_prog.add_point(1.0, Color.RED)
-    tex_prog.gradient = grad_prog
-    
-    _hp_bar.texture_under = tex_under
-    _hp_bar.texture_progress = tex_prog
-    _hp_bar.position = Vector2(-50, -60)
-    _hp_bar.max_value = max_hp
-    _hp_bar.value = current_hp
-    add_child(_hp_bar)
+    # Local HP bar disabled in favor of Main UI bar
+    pass
 
 func _setup_particles() -> void:
     # 光环粒子效果
@@ -134,6 +110,7 @@ func _process(delta: float) -> void:
                 _change_state(State.HOVER_STRAFE)
 
         State.HOVER_STRAFE:
+            # Boss AI: Hover at the top and strafe left/right using strafe_speed
             var speed_mult = 1.0
             if current_phase == Phase.PHASE_2:
                 speed_mult = 1.3
@@ -255,6 +232,7 @@ func _on_state_timer_timeout() -> void:
         State.ENTERING:
             _change_state(State.HOVER_STRAFE)
         State.HOVER_STRAFE:
+            # Boss AI: Choose next attack pattern based on phase
             var available_attacks = []
             available_attacks.append(State.ATTACK_SPREAD)
             available_attacks.append(State.ATTACK_RAPID)

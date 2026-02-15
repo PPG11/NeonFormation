@@ -84,8 +84,12 @@ func _on_button_pressed(index: int) -> void:
     
     # 购买商品
     var price = balance.unit_price
+    # Optimistic UI update: Deduct locally for immediate feedback.
+    # The actual authoritative deduction happens in Main.gd via the signal.
+    # Since ShopUI is modal, this local state is temporary until the shop reopens.
     _current_gold -= price
     _purchased[index] = true
+    print("ShopUI: Purchased item. Remaining Gold: ", _current_gold)
     
     # 发射购买信号
     emit_signal("item_purchased", _options[index], price)

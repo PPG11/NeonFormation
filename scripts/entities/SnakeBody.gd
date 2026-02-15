@@ -137,7 +137,7 @@ func _setup_hp_bar() -> void:
     add_child(_hp_bar)
 
 func _physics_process(delta: float) -> void:
-    if target == null:
+    if not is_instance_valid(target):
         return
     var to_target := target.global_position - global_position
     var dist := to_target.length()
@@ -285,7 +285,11 @@ func _on_shoot_timer_timeout() -> void:
         return
     match unit_type:
         ClassType.STRIKER:
-            _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
+            if randf() < 0.2:
+                # Critical Hit!
+                _spawn_bullet(Color.WHITE, int(balance.striker_damage * 2.0), 1.5, 0.0)
+            else:
+                _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
         ClassType.HEAVY:
             _spawn_bullet(Color.YELLOW, balance.heavy_damage, balance.heavy_scale, 0.0)
         ClassType.SPREAD:
@@ -392,9 +396,10 @@ func update_stats(bonuses: Dictionary) -> void:
     var level_mult = pow(2.0, level - 1)
     _damage_mult *= level_mult
 
-    scale = Vector2.ONE * (1.0 + (level - 1) * 0.3)
+    scale = Vector2.ONE * (1.0 + (level - 1) * 0.4)
     if level > 1:
-        modulate = Color(1.5, 1.5, 1.5)
+        # Make higher level units brighter and slightly larger
+        modulate = Color(1.2, 1.2, 1.2)
     else:
         modulate = Color.WHITE
 

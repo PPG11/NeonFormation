@@ -79,7 +79,7 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
+        var bosses = get_tree().get_nodes_in_group("boss")
         if bosses.size() > 0:
             var b = bosses[0]
             if "current_hp" in b:
@@ -133,6 +133,8 @@ func _spawn_boss_wave() -> void:
     boss.max_hp = hp
     boss.current_hp = hp
     boss.global_position = Vector2(180, -50)
+    boss.set("target_y", 120.0)
+    boss.set("strafe_speed", 180.0)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
 
@@ -163,8 +165,11 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    if gold < cost:
+        print("Not enough gold!")
+        return
     gold -= cost
+    print("Item Purchased! Cost: ", cost, " Remaining Gold: ", gold)
     _update_ui()
     if _player != null and _player.has_method("add_body"):
         _player.call("add_body", unit_type)

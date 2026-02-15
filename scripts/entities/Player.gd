@@ -172,7 +172,11 @@ func _add_body_internal(unit_type: int, level: int) -> void:
             if matching_indices.size() == 2:
                 break
 
+    # Auto-Chess Merge Logic:
+    # If we find 2 existing units of the same class and level, we merge them with the new unit (total 3).
+    # We remove the 2 existing units and recursively add 1 unit of the next level.
     if matching_indices.size() == 2:
+        print("MERGING: Found 2 existing units of Level ", level, ". Merging into Level ", level + 1)
         matching_indices.sort()
         matching_indices.reverse()
         for idx in matching_indices:
