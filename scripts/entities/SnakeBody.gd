@@ -15,6 +15,7 @@ var _shoot_timer: Timer
 var _attack_speed: float = 1.0
 var _damage_mult: float = 1.0
 var _size_mult: float = 1.0
+var crit_chance: float = 0.0
 var max_hp: int = 10
 var current_hp: int = 10
 var _hp_bar: TextureProgressBar
@@ -309,12 +310,22 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
-    bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+
+    var final_damage = int(damage * _damage_mult)
+    var final_scale = scale_factor * _size_mult
+    var final_color = bullet_color
+
+    if randf() < crit_chance:
+        final_damage *= 2
+        final_scale *= 1.5
+        final_color = Color(1.5, 1.5, 1.5) # Bright White
+
+    bullet.set("color", final_color)
+    bullet.set("damage", final_damage)
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
-    bullet.scale = Vector2.ONE * scale_factor * _size_mult
+    bullet.scale = Vector2.ONE * final_scale
     get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:
@@ -392,11 +403,15 @@ func update_stats(bonuses: Dictionary) -> void:
     var level_mult = pow(2.0, level - 1)
     _damage_mult *= level_mult
 
-    scale = Vector2.ONE * (1.0 + (level - 1) * 0.3)
+    scale = Vector2.ONE * (1.0 + (level - 1) * 0.4)
     if level > 1:
         modulate = Color(1.5, 1.5, 1.5)
     else:
         modulate = Color.WHITE
+
+    crit_chance = 0.0
+    if unit_type == ClassType.STRIKER:
+        crit_chance = 0.2
 
     # Apply class-specific synergies
     if unit_type == ClassType.BURST:

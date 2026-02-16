@@ -133,6 +133,10 @@ func _spawn_boss_wave() -> void:
     boss.max_hp = hp
     boss.current_hp = hp
     boss.global_position = Vector2(180, -50)
+
+    if boss.has_signal("hp_changed"):
+        boss.connect("hp_changed", _on_boss_hp_changed)
+
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
 
@@ -142,6 +146,10 @@ func _spawn_boss_wave() -> void:
 
     enemies_to_spawn = 0
     enemies_alive = 1
+
+func _on_boss_hp_changed(current: int, max_h: int) -> void:
+    _boss_hp_bar.value = current
+    _boss_hp_bar.max_value = max_h
 
 func _on_boss_killed(pos: Vector2) -> void:
     _boss_hp_bar.visible = false
@@ -163,11 +171,14 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
-    gold -= cost
-    _update_ui()
-    if _player != null and _player.has_method("add_body"):
-        _player.call("add_body", unit_type)
+    if gold >= cost:
+        gold -= cost
+        _update_ui()
+        if _player != null and _player.has_method("add_body"):
+            _player.call("add_body", unit_type)
+        print("Main: Item purchased. New Gold: ", gold)
+    else:
+        print("Main: Insufficient funds! Gold: ", gold, " Cost: ", cost)
 
 func _on_shop_closed() -> void:
     next_wave()
