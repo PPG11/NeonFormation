@@ -309,12 +309,28 @@ func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
+
+    var final_damage = int(damage * _damage_mult)
+    var final_scale = scale_factor
+
+    # Crit logic for Striker
+    if unit_type == ClassType.STRIKER:
+        if randf() < balance.striker_crit_chance:
+            final_damage = int(final_damage * balance.striker_crit_mult)
+            final_scale *= 1.5
+            bullet_color = Color(1.5, 1.5, 1.5) # Bright white
+
+            # Visual feedback on shooter
+            modulate = Color(1.5, 1.5, 1.5)
+            var tween = create_tween()
+            tween.tween_property(self, "modulate", Color.WHITE if level == 1 else Color(1.5, 1.5, 1.5), 0.1)
+
     bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+    bullet.set("damage", final_damage)
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
-    bullet.scale = Vector2.ONE * scale_factor * _size_mult
+    bullet.scale = Vector2.ONE * final_scale * _size_mult
     get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:

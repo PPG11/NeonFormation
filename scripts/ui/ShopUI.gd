@@ -79,15 +79,15 @@ func _on_button_pressed(index: int) -> void:
         return
     if _purchased[index]:
         return
-    if _current_gold < balance.unit_price:
+    var price = balance.unit_price
+    if _current_gold < price:
         return
     
-    # 购买商品
-    var price = balance.unit_price
+    # Deduct gold locally
     _current_gold -= price
     _purchased[index] = true
     
-    # 发射购买信号
+    # Emit signal for Main to handle logic
     emit_signal("item_purchased", _options[index], price)
     
     # 更新UI，但不关闭商店

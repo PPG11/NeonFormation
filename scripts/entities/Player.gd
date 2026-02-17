@@ -163,7 +163,8 @@ func _on_shoot_timeout() -> void:
 func add_body(unit_type: int) -> void:
     _add_body_internal(unit_type, 1)
 
-func _add_body_internal(unit_type: int, level: int) -> void:
+func _add_body_internal(unit_type: int, level: int, insert_at: int = -1) -> void:
+    # Check for merges
     var matching_indices = []
     for i in range(body_parts.size()):
         var part = body_parts[i]
@@ -173,33 +174,63 @@ func _add_body_internal(unit_type: int, level: int) -> void:
                 break
 
     if matching_indices.size() == 2:
-        matching_indices.sort()
-        matching_indices.reverse()
-        for idx in matching_indices:
+        # Found 2 existing matching units + 1 new unit = 3 units -> Merge to Level + 1
+        var idx1 = matching_indices[0]
+        var idx2 = matching_indices[1]
+
+        # Determine insertion point (use the earlier position)
+        var merge_insert_idx = min(idx1, idx2)
+
+        # Remove old units
+        # Must remove higher index first to not shift the lower index
+        var remove_indices = [idx1, idx2]
+        remove_indices.sort()
+        remove_indices.reverse()
+
+        for idx in remove_indices:
             var part = body_parts[idx]
             body_parts.remove_at(idx)
             part.queue_free()
 
         _refresh_body_targets()
-        _add_body_internal(unit_type, level + 1)
+
+        # Recursively add the higher level unit at the specific index
+        _add_body_internal(unit_type, level + 1, merge_insert_idx)
         return
 
+    # Add new unit
+    _insert_body(unit_type, level, insert_at)
+
+func _insert_body(unit_type: int, level: int, index: int) -> void:
     if body_scene == null:
         return
     var body := body_scene.instantiate() as Node2D
     if body == null:
         return
-    var target: Node2D = self if body_parts.is_empty() else body_parts.back()
+
+    # Determine insertion logic
+    if index == -1 or index > body_parts.size():
+        index = body_parts.size()
+
     body.set("unit_type", unit_type)
     body.set("level", level)
-    body.set("target", target)
+
     get_tree().current_scene.add_child(body)
     body.tree_exited.connect(_on_body_exited.bind(body))
-    var offset := body.get("follow_offset") as Vector2
-    if offset == null:
-        offset = Vector2.ZERO
-    body.global_position = target.global_transform * offset
-    body_parts.append(body)
+
+    body_parts.insert(index, body)
+
+    # Refresh targets to link the chain correctly
+    _refresh_body_targets()
+
+    # Set initial position based on new target
+    var target = body.get("target")
+    if target != null:
+        var offset := body.get("follow_offset") as Vector2
+        if offset == null:
+            offset = Vector2.ZERO
+        body.global_position = target.global_transform * offset
+
     recalculate_synergies()
 
 func _on_body_exited(body: Node) -> void:
