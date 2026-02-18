@@ -112,8 +112,8 @@ func _setup_hp_bar() -> void:
     _hp_bar = TextureProgressBar.new()
 
     var tex_under = GradientTexture2D.new()
-    tex_under.width = 24
-    tex_under.height = 4
+    tex_under.width = 32
+    tex_under.height = 6
     tex_under.fill_from = Vector2(0, 0)
     tex_under.fill_to = Vector2(0, 1)
     var grad_under = Gradient.new()
@@ -121,8 +121,8 @@ func _setup_hp_bar() -> void:
     tex_under.gradient = grad_under
 
     var tex_prog = GradientTexture2D.new()
-    tex_prog.width = 24
-    tex_prog.height = 4
+    tex_prog.width = 32
+    tex_prog.height = 6
     tex_prog.fill_from = Vector2(0, 0)
     tex_prog.fill_to = Vector2(0, 1)
     var grad_prog = Gradient.new()
@@ -131,7 +131,7 @@ func _setup_hp_bar() -> void:
 
     _hp_bar.texture_under = tex_under
     _hp_bar.texture_progress = tex_prog
-    _hp_bar.position = Vector2(-12, -20)
+    _hp_bar.position = Vector2(-16, -24)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
     add_child(_hp_bar)
@@ -306,15 +306,32 @@ func _on_shoot_timer_timeout() -> void:
             pass  # Support uses separate timer
 
 func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_deg: float) -> void:
+    var final_damage = int(damage * _damage_mult)
+    var final_scale = scale_factor * _size_mult
+    var final_color = bullet_color
+
+    # Critical Hit Logic for Striker
+    if unit_type == ClassType.STRIKER:
+        # Check if critical hit
+        if randf() < balance.striker_crit_chance:
+            final_damage = int(final_damage * balance.striker_crit_mult)
+            final_scale *= 1.5
+            final_color = Color(1.5, 1.5, 1.5) # Bright white
+
+            # Visual kickback
+            var tween = create_tween()
+            tween.tween_property(self, "scale", scale * 1.2, 0.05)
+            tween.tween_property(self, "scale", scale, 0.05)
+
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
-    bullet.set("color", bullet_color)
-    bullet.set("damage", int(damage * _damage_mult))
+    bullet.set("color", final_color)
+    bullet.set("damage", final_damage)
     bullet.set("is_enemy_bullet", false)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
-    bullet.scale = Vector2.ONE * scale_factor * _size_mult
+    bullet.scale = Vector2.ONE * final_scale
     get_tree().current_scene.add_child(bullet)
 
 func _get_shoot_interval() -> float:

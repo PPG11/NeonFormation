@@ -87,6 +87,8 @@ func _on_button_pressed(index: int) -> void:
     _current_gold -= price
     _purchased[index] = true
     
+    print("[ShopUI] Purchased item ", _options[index], " for ", price, ". Remaining local gold: ", _current_gold)
+
     # 发射购买信号
     emit_signal("item_purchased", _options[index], price)
     
