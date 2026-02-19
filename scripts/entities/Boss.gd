@@ -7,6 +7,7 @@ enum Phase { PHASE_1, PHASE_2, PHASE_3 }
 
 @export var max_hp: int = 2000
 var current_hp: int
+var damage_multiplier: float = 1.0
 
 @onready var balance: GameBalance = get_node("/root/GameBalance") as GameBalance
 const BulletScene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
@@ -367,7 +368,7 @@ func _spawn_bullet(angle_deg: float, color: Color = Color.RED, damage_mult: floa
     elif current_phase == Phase.PHASE_3:
         base_damage = 30
     
-    bullet.set("damage", int(base_damage * damage_mult))
+    bullet.set("damage", int(base_damage * damage_mult * damage_multiplier))
     get_tree().current_scene.add_child(bullet)
 
 func take_damage(amount: int) -> void:

@@ -103,6 +103,9 @@ func _on_spawn_timeout() -> void:
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
 
+    var damage_val = int(float(balance.enemy_bullet_damage) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1)))
+    enemy.set("damage", damage_val)
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -130,8 +133,10 @@ func _spawn_boss_wave() -> void:
     if BossScene == null: return
     var boss = BossScene.instantiate()
     var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
+    var damage_mult = pow(1.1, float(current_wave) / 5.0)
     boss.max_hp = hp
     boss.current_hp = hp
+    boss.damage_multiplier = damage_mult
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
@@ -163,7 +168,13 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    # 商店可能已经做了本地判断，但服务端逻辑在这里
+    if cost <= 0:
+        cost = balance.unit_price
+
+    if gold < cost:
+        return
+
     gold -= cost
     _update_ui()
     if _player != null and _player.has_method("add_body"):
