@@ -4,6 +4,7 @@ extends Area2D
 @export var color: Color = Color.WHITE
 @export var damage: int = 10
 @export var is_enemy_bullet: bool = false
+@export var is_critical: bool = false
 
 # Ricochet properties
 @export var can_ricochet: bool = false
@@ -19,6 +20,11 @@ func _ready() -> void:
     body_entered.connect(_on_body_entered)
     _bounces_left = max_bounces
     add_to_group("bullets")
+
+    if is_critical:
+        damage *= 2
+        scale *= 1.5
+        color = Color(0.8, 1.0, 1.0) # Brighter Cyan
 
 func _process(delta: float) -> void:
     var dir := Vector2.UP.rotated(rotation)

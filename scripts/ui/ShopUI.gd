@@ -19,6 +19,7 @@ var _current_gold: int = 0
 var _purchased: Array[bool] = [false, false, false]
 
 func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_ALWAYS
     visible = false
     for i in _buttons.size():
         _buttons[i].pressed.connect(_on_button_pressed.bind(i))

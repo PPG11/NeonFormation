@@ -30,6 +30,7 @@ var _circle_bullet_count: int = 0
 func _ready() -> void:
     current_hp = max_hp
     _base_modulate = modulate
+    add_to_group("boss")
     add_to_group("enemy")
     add_to_group("enemy_team")
     monitoring = true
@@ -44,7 +45,7 @@ func _ready() -> void:
     add_child(_shoot_timer)
     _shoot_timer.timeout.connect(_on_shoot_timer_timeout)
 
-    _setup_hp_bar()
+    # _setup_hp_bar() # HUD Boss bar is used instead
     _setup_particles()
     _change_state(State.ENTERING)
 

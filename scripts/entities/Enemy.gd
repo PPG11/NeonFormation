@@ -74,6 +74,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-12, -24)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    _hp_bar.visible = false
     add_child(_hp_bar)
 
 func _process(delta: float) -> void:
@@ -136,6 +137,7 @@ func _on_area_entered(area: Area2D) -> void:
 func take_damage(amount: int) -> void:
     current_hp -= amount
     if _hp_bar:
+        _hp_bar.visible = true
         _hp_bar.value = current_hp
     modulate = Color.RED
     var tween := create_tween()

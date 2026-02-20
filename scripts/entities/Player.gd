@@ -2,6 +2,7 @@ extends CharacterBody2D
 
 @export var bullet_scene: PackedScene = preload("res://scenes/entities/Bullet.tscn")
 @export var body_scene: PackedScene = preload("res://scenes/entities/SnakeBody.tscn")
+@export var merge_effect_scene: PackedScene = preload("res://scenes/effects/Explosion.tscn")
 @export var shoot_interval: float = 0.2
 
 @export var max_hp: int = 10
@@ -173,12 +174,25 @@ func _add_body_internal(unit_type: int, level: int) -> void:
                 break
 
     if matching_indices.size() == 2:
+        print("[MERGE] Found 3 units of Type ", unit_type, " Level ", level, ". Merging into Level ", level + 1)
+
+        # Calculate center position for visual effect
+        var center_pos = Vector2.ZERO
+        var count = 0
+
         matching_indices.sort()
         matching_indices.reverse()
         for idx in matching_indices:
             var part = body_parts[idx]
+            if is_instance_valid(part):
+                center_pos += part.global_position
+                count += 1
             body_parts.remove_at(idx)
             part.queue_free()
+
+        if count > 0:
+            center_pos /= count
+            _spawn_merge_effect(center_pos)
 
         _refresh_body_targets()
         _add_body_internal(unit_type, level + 1)
@@ -311,6 +325,18 @@ func recalculate_synergies() -> void:
     for part in body_parts:
         if part != null and part.has_method("update_stats"):
             part.call("update_stats", synergy_bonuses)
+
+func _spawn_merge_effect(pos: Vector2) -> void:
+    if merge_effect_scene == null:
+        return
+    var effect = merge_effect_scene.instantiate()
+    if effect is Node2D:
+        effect.global_position = pos
+        # Make it bigger and different color if possible
+        effect.scale = Vector2(2.0, 2.0)
+        if "color" in effect:
+            effect.color = Color.GOLD
+        get_tree().current_scene.add_child(effect)
 
 func _spawn_initial_bodies() -> void:
     add_body(SnakeBodyScript.ClassType.STRIKER)
