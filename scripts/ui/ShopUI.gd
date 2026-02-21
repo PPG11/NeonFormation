@@ -79,14 +79,16 @@ func _on_button_pressed(index: int) -> void:
         return
     if _purchased[index]:
         return
-    if _current_gold < balance.unit_price:
+    var price = balance.unit_price
+    if _current_gold < price:
         return
     
     # 购买商品
-    var price = balance.unit_price
     _current_gold -= price
     _purchased[index] = true
     
+    print("ShopUI: Purchased item %d for %d gold. Remaining local gold: %d" % [_options[index], price, _current_gold])
+
     # 发射购买信号
     emit_signal("item_purchased", _options[index], price)
     

@@ -51,9 +51,9 @@ func _ready() -> void:
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
-    _boss_hp_bar.modulate = Color.RED
+    _boss_hp_bar.size = Vector2(240, 24)
+    _boss_hp_bar.position = Vector2(60, 40)
+    _boss_hp_bar.modulate = Color(1.0, 0.2, 0.2)
     $CanvasLayer.add_child(_boss_hp_bar)
 
     _spawn_timer = Timer.new()
@@ -79,7 +79,7 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
+        var bosses = get_tree().get_nodes_in_group("boss")
         if bosses.size() > 0:
             var b = bosses[0]
             if "current_hp" in b:
@@ -163,11 +163,14 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
-    gold -= cost
-    _update_ui()
-    if _player != null and _player.has_method("add_body"):
-        _player.call("add_body", unit_type)
+    print("Main: Purchasing unit %d, cost: %d. Current gold: %d" % [unit_type, cost, gold])
+    if gold >= cost:
+        gold -= cost
+        _update_ui()
+        if _player != null and _player.has_method("add_body"):
+            _player.call("add_body", unit_type)
+    else:
+        print("Main: Insufficient funds for purchase! (Should have been caught by ShopUI)")
 
 func _on_shop_closed() -> void:
     next_wave()
