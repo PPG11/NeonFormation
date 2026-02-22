@@ -32,6 +32,7 @@ func _ready() -> void:
     _base_modulate = modulate
     add_to_group("enemy")
     add_to_group("enemy_team")
+    add_to_group("boss")
     monitoring = true
 
     _state_timer = Timer.new()
@@ -44,7 +45,7 @@ func _ready() -> void:
     add_child(_shoot_timer)
     _shoot_timer.timeout.connect(_on_shoot_timer_timeout)
 
-    _setup_hp_bar()
+    # _setup_hp_bar() # Main UI handles Boss HP Bar
     _setup_particles()
     _change_state(State.ENTERING)
 
@@ -372,8 +373,7 @@ func _spawn_bullet(angle_deg: float, color: Color = Color.RED, damage_mult: floa
 
 func take_damage(amount: int) -> void:
     current_hp -= amount
-    if _hp_bar:
-        _hp_bar.value = current_hp
+    # _hp_bar handled by Main UI
     
     modulate = Color.RED
     var tween := create_tween()

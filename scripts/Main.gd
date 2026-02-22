@@ -56,6 +56,9 @@ func _ready() -> void:
     _boss_hp_bar.modulate = Color.RED
     $CanvasLayer.add_child(_boss_hp_bar)
 
+    # Ensure Boss HP Bar is hidden initially
+    _boss_hp_bar.visible = false
+
     _spawn_timer = Timer.new()
     _spawn_timer.wait_time = spawn_interval
     _spawn_timer.one_shot = false
@@ -79,7 +82,7 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
+        var bosses = get_tree().get_nodes_in_group("boss")
         if bosses.size() > 0:
             var b = bosses[0]
             if "current_hp" in b:
@@ -163,7 +166,7 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    print("Purchased unit %d for %d gold. Remaining: %d" % [unit_type, cost, gold - cost])
     gold -= cost
     _update_ui()
     if _player != null and _player.has_method("add_body"):

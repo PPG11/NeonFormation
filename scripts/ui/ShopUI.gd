@@ -84,9 +84,14 @@ func _on_button_pressed(index: int) -> void:
     
     # 购买商品
     var price = balance.unit_price
+    if _current_gold < price:
+        return
+
     _current_gold -= price
     _purchased[index] = true
     
+    print("[Shop] Requesting purchase of %s for %d. Local gold remaining: %d" % [_type_to_label(_options[index]), price, _current_gold])
+
     # 发射购买信号
     emit_signal("item_purchased", _options[index], price)
     
