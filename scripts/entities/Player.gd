@@ -161,9 +161,9 @@ func _on_shoot_timeout() -> void:
     get_tree().current_scene.add_child(bullet)
 
 func add_body(unit_type: int) -> void:
-    _add_body_internal(unit_type, 1)
+    _add_body_internal(unit_type, 1, -1)
 
-func _add_body_internal(unit_type: int, level: int) -> void:
+func _add_body_internal(unit_type: int, level: int, insert_at: int = -1) -> void:
     var matching_indices = []
     for i in range(body_parts.size()):
         var part = body_parts[i]
@@ -173,6 +173,10 @@ func _add_body_internal(unit_type: int, level: int) -> void:
                 break
 
     if matching_indices.size() == 2:
+        var min_idx = min(matching_indices[0], matching_indices[1])
+        if insert_at != -1:
+            min_idx = min(min_idx, insert_at)
+
         matching_indices.sort()
         matching_indices.reverse()
         for idx in matching_indices:
@@ -181,7 +185,7 @@ func _add_body_internal(unit_type: int, level: int) -> void:
             part.queue_free()
 
         _refresh_body_targets()
-        _add_body_internal(unit_type, level + 1)
+        _add_body_internal(unit_type, level + 1, min_idx)
         return
 
     if body_scene == null:
@@ -189,17 +193,35 @@ func _add_body_internal(unit_type: int, level: int) -> void:
     var body := body_scene.instantiate() as Node2D
     if body == null:
         return
-    var target: Node2D = self if body_parts.is_empty() else body_parts.back()
+
+    var target_node: Node2D = self
+    if insert_at != -1:
+        if insert_at == 0:
+            target_node = self
+        elif insert_at > 0 and insert_at <= body_parts.size():
+            target_node = body_parts[insert_at - 1]
+    else:
+        if not body_parts.is_empty():
+            target_node = body_parts.back()
+
     body.set("unit_type", unit_type)
     body.set("level", level)
-    body.set("target", target)
+    body.set("target", target_node)
+
     get_tree().current_scene.add_child(body)
+
+    if insert_at != -1 and insert_at <= body_parts.size():
+        body_parts.insert(insert_at, body)
+    else:
+        body_parts.append(body)
+
     body.tree_exited.connect(_on_body_exited.bind(body))
     var offset := body.get("follow_offset") as Vector2
     if offset == null:
         offset = Vector2.ZERO
-    body.global_position = target.global_transform * offset
-    body_parts.append(body)
+    body.global_position = target_node.global_transform * offset
+
+    _refresh_body_targets()
     recalculate_synergies()
 
 func _on_body_exited(body: Node) -> void:

@@ -18,7 +18,7 @@ var enemies_alive: int = 0
 var _spawn_timer: Timer
 var _player: Node2D
 var _shop_ui: CanvasLayer
-var _boss_hp_bar: ProgressBar
+var _boss_hp_bar: TextureProgressBar
 @onready var _camera: Camera2D = $Camera2D
 @onready var _wave_label: Label = $CanvasLayer/WaveLabel
 @onready var _gold_label: Label = $CanvasLayer/GoldLabel
@@ -49,11 +49,31 @@ func _ready() -> void:
             if _shop_ui.has_signal("shop_closed"):
                 _shop_ui.connect("shop_closed", _on_shop_closed)
 
-    _boss_hp_bar = ProgressBar.new()
+    _boss_hp_bar = TextureProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
-    _boss_hp_bar.modulate = Color.RED
+
+    var tex_under = GradientTexture2D.new()
+    tex_under.width = 300
+    tex_under.height = 20
+    tex_under.fill_from = Vector2(0, 0)
+    tex_under.fill_to = Vector2(0, 1)
+    var grad_under = Gradient.new()
+    grad_under.add_point(0.0, Color(0.1, 0.1, 0.1))
+    tex_under.gradient = grad_under
+
+    var tex_prog = GradientTexture2D.new()
+    tex_prog.width = 300
+    tex_prog.height = 20
+    tex_prog.fill_from = Vector2(0, 0)
+    tex_prog.fill_to = Vector2(0, 1)
+    var grad_prog = Gradient.new()
+    grad_prog.add_point(0.0, Color.DARK_RED)
+    grad_prog.add_point(1.0, Color.RED)
+    tex_prog.gradient = grad_prog
+
+    _boss_hp_bar.texture_under = tex_under
+    _boss_hp_bar.texture_progress = tex_prog
+    _boss_hp_bar.position = Vector2(30, 50)
     $CanvasLayer.add_child(_boss_hp_bar)
 
     _spawn_timer = Timer.new()
@@ -77,13 +97,6 @@ func _process(delta: float) -> void:
             shake_strength = 0.0
             _camera.offset = Vector2.ZERO
     _update_hp_bar()
-
-    if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
-        if bosses.size() > 0:
-            var b = bosses[0]
-            if "current_hp" in b:
-                _boss_hp_bar.value = b.current_hp
 
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
@@ -135,6 +148,8 @@ func _spawn_boss_wave() -> void:
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
+    if boss.has_signal("hp_changed"):
+        boss.connect("hp_changed", _on_boss_hp_changed)
 
     _boss_hp_bar.max_value = hp
     _boss_hp_bar.value = hp
@@ -146,6 +161,10 @@ func _spawn_boss_wave() -> void:
 func _on_boss_killed(pos: Vector2) -> void:
     _boss_hp_bar.visible = false
     _on_enemy_killed(500, pos)
+
+func _on_boss_hp_changed(new_hp: int) -> void:
+    if _boss_hp_bar != null:
+        _boss_hp_bar.value = new_hp
 
 func _on_enemy_killed(reward_gold: int, pos: Vector2) -> void:
     gold += reward_gold
@@ -163,7 +182,8 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    if gold < cost:
+        return
     gold -= cost
     _update_ui()
     if _player != null and _player.has_method("add_body"):

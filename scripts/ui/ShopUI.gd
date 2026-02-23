@@ -80,6 +80,11 @@ func _on_button_pressed(index: int) -> void:
     if _purchased[index]:
         return
     if _current_gold < balance.unit_price:
+        # Visual feedback for insufficient funds
+        var btn = _buttons[index]
+        var tween = create_tween()
+        tween.tween_property(btn, "modulate", Color.RED, 0.1)
+        tween.tween_property(btn, "modulate", Color.WHITE, 0.1)
         return
     
     # 购买商品
