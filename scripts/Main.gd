@@ -49,12 +49,7 @@ func _ready() -> void:
             if _shop_ui.has_signal("shop_closed"):
                 _shop_ui.connect("shop_closed", _on_shop_closed)
 
-    _boss_hp_bar = ProgressBar.new()
-    _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
-    _boss_hp_bar.modulate = Color.RED
-    $CanvasLayer.add_child(_boss_hp_bar)
+    _setup_boss_hp_bar()
 
     _spawn_timer = Timer.new()
     _spawn_timer.wait_time = spawn_interval
@@ -84,6 +79,9 @@ func _process(delta: float) -> void:
             var b = bosses[0]
             if "current_hp" in b:
                 _boss_hp_bar.value = b.current_hp
+        else:
+             # Safety fallback: hide if no boss
+             _boss_hp_bar.visible = false
 
 func _on_spawn_timeout() -> void:
     if enemies_to_spawn <= 0:
@@ -163,14 +161,59 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
-    gold -= cost
+    if gold >= cost:
+        gold -= cost
+        print("[Main] Item Purchased. Cost: ", cost, " Remaining Gold: ", gold)
+    else:
+        print("[Main] ERROR: Insufficient gold for purchase but signal received! Gold: ", gold, " Cost: ", cost)
+        # Force correct gold just in case
+        gold = max(0, gold - cost)
+
     _update_ui()
     if _player != null and _player.has_method("add_body"):
         _player.call("add_body", unit_type)
 
 func _on_shop_closed() -> void:
     next_wave()
+
+func _setup_boss_hp_bar() -> void:
+    _boss_hp_bar = TextureProgressBar.new()
+
+    var tex_under = GradientTexture2D.new()
+    tex_under.width = 300
+    tex_under.height = 24
+    tex_under.fill_from = Vector2(0, 0)
+    tex_under.fill_to = Vector2(0, 1)
+    var grad_under = Gradient.new()
+    grad_under.add_point(0.0, Color(0.2, 0.2, 0.2))
+    tex_under.gradient = grad_under
+
+    var tex_prog = GradientTexture2D.new()
+    tex_prog.width = 300
+    tex_prog.height = 24
+    tex_prog.fill_from = Vector2(0, 0)
+    tex_prog.fill_to = Vector2(0, 1)
+    var grad_prog = Gradient.new()
+    grad_prog.add_point(0.0, Color.DARK_RED)
+    grad_prog.add_point(0.5, Color.RED)
+    grad_prog.add_point(1.0, Color.ORANGE)
+    tex_prog.gradient = grad_prog
+
+    _boss_hp_bar.texture_under = tex_under
+    _boss_hp_bar.texture_progress = tex_prog
+
+    # Center at top (assuming 360 width, so 180 is center. Bar is 300 wide, so pos.x should be 180 - 150 = 30)
+    _boss_hp_bar.position = Vector2(30, 50)
+    _boss_hp_bar.visible = false
+
+    # Add a Label for "BOSS"
+    var label = Label.new()
+    label.text = "BOSS"
+    label.position = Vector2(125, -20) # Relative to bar
+    label.modulate = Color.RED
+    _boss_hp_bar.add_child(label)
+
+    $CanvasLayer.add_child(_boss_hp_bar)
 
 func apply_shake(strength: float) -> void:
     shake_strength = max(shake_strength, strength)

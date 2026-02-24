@@ -79,18 +79,22 @@ func _on_button_pressed(index: int) -> void:
         return
     if _purchased[index]:
         return
-    if _current_gold < balance.unit_price:
-        return
     
-    # 购买商品
     var price = balance.unit_price
+    if _current_gold < price:
+        # Visual feedback for insufficient funds (optional, as button should be disabled)
+        return
+
+    # Update local state for immediate feedback
     _current_gold -= price
     _purchased[index] = true
     
-    # 发射购买信号
+    print("[ShopUI] Purchased item index: ", index, " Type: ", _options[index], " Cost: ", price, " Remaining Local Gold: ", _current_gold)
+
+    # Emit signal for Main to handle logic and actual gold deduction
     emit_signal("item_purchased", _options[index], price)
     
-    # 更新UI，但不关闭商店
+    # Update UI immediately
     _update_ui()
 
 func _on_leave_pressed() -> void:
