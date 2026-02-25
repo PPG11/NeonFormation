@@ -4,6 +4,7 @@ extends Area2D
 @export var color: Color = Color.WHITE
 @export var damage: int = 10
 @export var is_enemy_bullet: bool = false
+@export var is_critical: bool = false
 
 # Ricochet properties
 @export var can_ricochet: bool = false
@@ -26,9 +27,16 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
     var draw_color := color
+    var radius := 3.0
     if is_enemy_bullet:
         draw_color = Color.ORANGE
-    draw_circle(Vector2.ZERO, 3.0, draw_color)
+    elif is_critical:
+        draw_color = Color(0.8, 1.0, 1.0) # Bright Cyan
+        radius = 4.5
+
+    draw_circle(Vector2.ZERO, radius, draw_color)
+    if is_critical:
+        draw_arc(Vector2.ZERO, radius + 1.0, 0, TAU, 12, Color.WHITE, 1.0)
 
 func _on_area_entered(area: Area2D) -> void:
     if is_enemy_bullet:

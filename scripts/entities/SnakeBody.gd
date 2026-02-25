@@ -60,6 +60,10 @@ var _support_buff_targets: int = 2
 var _support_buff_lines: Array[Dictionary] = []
 var _buff_pulse_time: float = 0.0
 
+# Critical hit variables
+var crit_chance: float = 0.2
+var crit_mult: float = 2.0
+
 func _ready() -> void:
     speed = balance.snake_speed
     keep_distance = balance.snake_keep_distance
@@ -285,7 +289,11 @@ func _on_shoot_timer_timeout() -> void:
         return
     match unit_type:
         ClassType.STRIKER:
-            _spawn_bullet(Color.CYAN, balance.striker_damage, 1.0, 0.0)
+            var is_crit = randf() < crit_chance
+            var dmg = balance.striker_damage
+            if is_crit:
+                dmg = int(dmg * crit_mult)
+            _spawn_bullet(Color.CYAN, dmg, 1.0, 0.0, is_crit)
         ClassType.HEAVY:
             _spawn_bullet(Color.YELLOW, balance.heavy_damage, balance.heavy_scale, 0.0)
         ClassType.SPREAD:
@@ -305,13 +313,15 @@ func _on_shoot_timer_timeout() -> void:
         ClassType.SUPPORT:
             pass  # Support uses separate timer
 
-func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_deg: float) -> void:
+func _spawn_bullet(bullet_color: Color, damage: int, scale_factor: float, angle_deg: float, is_critical: bool = false) -> void:
     var bullet := BulletScene.instantiate() as Area2D
     if bullet == null:
         return
     bullet.set("color", bullet_color)
     bullet.set("damage", int(damage * _damage_mult))
     bullet.set("is_enemy_bullet", false)
+    if is_critical:
+        bullet.set("is_critical", true)
     bullet.global_position = global_position
     bullet.rotation = deg_to_rad(angle_deg)
     bullet.scale = Vector2.ONE * scale_factor * _size_mult

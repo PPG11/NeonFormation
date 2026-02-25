@@ -132,6 +132,7 @@ func _spawn_boss_wave() -> void:
     var hp = balance.boss_base_hp + ((current_wave / 5) * balance.boss_hp_per_wave)
     boss.max_hp = hp
     boss.current_hp = hp
+    boss.damage_multiplier = 1.0 + (current_wave * 0.1)
     boss.global_position = Vector2(180, -50)
     get_tree().current_scene.add_child(boss)
     boss.boss_died.connect(_on_boss_killed)
@@ -163,7 +164,8 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
-    # 商店已经扣除了金币，这里只需要同步并添加单位
+    if gold < cost:
+        return
     gold -= cost
     _update_ui()
     if _player != null and _player.has_method("add_body"):
