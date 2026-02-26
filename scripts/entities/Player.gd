@@ -173,14 +173,19 @@ func _add_body_internal(unit_type: int, level: int) -> void:
                 break
 
     if matching_indices.size() == 2:
+        # 1. Sort and reverse to safely remove by index
         matching_indices.sort()
         matching_indices.reverse()
+        # 2. Remove the 2 matching existing units
         for idx in matching_indices:
             var part = body_parts[idx]
             body_parts.remove_at(idx)
             part.queue_free()
 
+        print("MERGE: Level ", level, " -> ", level + 1)
+        # 3. Refresh targets for remaining units
         _refresh_body_targets()
+        # 4. Recursively add the upgraded unit (Level + 1)
         _add_body_internal(unit_type, level + 1)
         return
 

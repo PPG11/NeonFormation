@@ -44,16 +44,15 @@ func _ready() -> void:
         _shop_ui = ShopUIScene.instantiate() as CanvasLayer
         if _shop_ui != null:
             add_child(_shop_ui)
-            if _shop_ui.has_signal("item_purchased"):
-                _shop_ui.connect("item_purchased", _on_item_purchased)
-            if _shop_ui.has_signal("shop_closed"):
-                _shop_ui.connect("shop_closed", _on_shop_closed)
+            _shop_ui.connect("item_purchased", _on_item_purchased)
+            _shop_ui.connect("shop_closed", _on_shop_closed)
 
     _boss_hp_bar = ProgressBar.new()
     _boss_hp_bar.visible = false
-    _boss_hp_bar.size = Vector2(240, 20)
-    _boss_hp_bar.position = Vector2(60, 80)
+    _boss_hp_bar.size = Vector2(300, 30)
+    _boss_hp_bar.position = Vector2(30, 50)
     _boss_hp_bar.modulate = Color.RED
+    _boss_hp_bar.show_percentage = false
     $CanvasLayer.add_child(_boss_hp_bar)
 
     _spawn_timer = Timer.new()
@@ -79,7 +78,7 @@ func _process(delta: float) -> void:
     _update_hp_bar()
 
     if _boss_hp_bar.visible:
-        var bosses = get_tree().get_nodes_in_group("enemy")
+        var bosses = get_tree().get_nodes_in_group("boss")
         if bosses.size() > 0:
             var b = bosses[0]
             if "current_hp" in b:
@@ -103,6 +102,9 @@ func _on_spawn_timeout() -> void:
     var speed_val = (balance.enemy_base_speed + (current_wave * balance.enemy_speed_per_wave)) * pow(balance.enemy_speed_exponent, max(0, current_wave - 1))
     enemy.set("speed", speed_val)
 
+    var damage_val = (balance.enemy_bullet_damage + (current_wave * balance.enemy_damage_per_wave)) * pow(balance.enemy_damage_exponent, max(0, current_wave - 1))
+    enemy.set("damage", int(damage_val))
+
     enemy.set("enemy_type", _pick_enemy_type())
     var viewport_rect := get_viewport().get_visible_rect()
     var x := randf_range(viewport_rect.position.x + spawn_padding,
@@ -119,9 +121,11 @@ func start_wave() -> void:
     _update_ui()
 
     if current_wave % 5 == 0:
+        print("Starting Boss Wave ", current_wave)
         _spawn_boss_wave()
         return
 
+    print("Starting Normal Wave ", current_wave)
     enemies_to_spawn = balance.wave_base_enemies + (current_wave * balance.wave_enemies_per_wave)
     enemies_alive = 0
     _spawn_timer.start()
@@ -163,8 +167,12 @@ func next_wave() -> void:
     start_wave()
 
 func _on_item_purchased(unit_type: int, cost: int) -> void:
+    if gold < cost:
+        print("Main: Not enough gold for purchase!")
+        return
     # 商店已经扣除了金币，这里只需要同步并添加单位
     gold -= cost
+    print("Main: Purchased unit type ", unit_type, ". Cost: ", cost, ". Gold left: ", gold)
     _update_ui()
     if _player != null and _player.has_method("add_body"):
         _player.call("add_body", unit_type)

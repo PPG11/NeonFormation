@@ -5,6 +5,7 @@ signal enemy_died(amount: int, pos: Vector2)
 enum EnemyType { DASHER, SHOOTER, BASIC }
 
 @export var speed: float = 100.0
+@export var damage: int = 10
 @export var max_hp: int = 60
 @export var enemy_type: EnemyType = EnemyType.BASIC : set = _set_enemy_type
 
@@ -74,6 +75,7 @@ func _setup_hp_bar() -> void:
     _hp_bar.position = Vector2(-12, -24)
     _hp_bar.max_value = max_hp
     _hp_bar.value = current_hp
+    _hp_bar.visible = false
     add_child(_hp_bar)
 
 func _process(delta: float) -> void:
@@ -120,7 +122,7 @@ func _on_screen_exited() -> void:
 func _on_body_entered(body: Node) -> void:
     if body is CharacterBody2D and body.has_method("take_damage"):
         # 敌人碰撞玩家造成伤害而不是直接秒杀
-        body.call("take_damage", 8)
+        body.call("take_damage", damage)
         _emit_enemy_died(0, global_position)
         queue_free()
 
@@ -137,6 +139,7 @@ func take_damage(amount: int) -> void:
     current_hp -= amount
     if _hp_bar:
         _hp_bar.value = current_hp
+        _hp_bar.visible = true
     modulate = Color.RED
     var tween := create_tween()
     tween.tween_property(self, "modulate", _base_modulate, 0.1)
@@ -168,7 +171,7 @@ func _on_shoot_timer_timeout() -> void:
         dir = Vector2.DOWN
     bullet.set("is_enemy_bullet", true)
     bullet.set("color", Color.ORANGE)
-    bullet.set("damage", balance.enemy_bullet_damage)
+    bullet.set("damage", damage)
     bullet.global_position = global_position
     bullet.rotation = dir.angle() + PI / 2.0
     get_tree().current_scene.add_child(bullet)

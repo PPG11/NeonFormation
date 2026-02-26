@@ -89,6 +89,7 @@ func _on_button_pressed(index: int) -> void:
     
     # 发射购买信号
     emit_signal("item_purchased", _options[index], price)
+    print("ShopUI: Purchased item ", index, " Cost: ", price, " Remaining: ", _current_gold)
     
     # 更新UI，但不关闭商店
     _update_ui()
